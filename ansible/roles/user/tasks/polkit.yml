@@ -15,6 +15,7 @@
     group: root
     mode: "0644"
   with_fileglob:
-    - "polkit/*"
+    - "polkit/*.rules"
+    - "polkit/*.pkla"
   loop_control:
     label: "{{ item | basename }}"
