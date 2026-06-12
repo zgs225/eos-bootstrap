@@ -1,0 +1,12 @@
+---
+- name: Install AUR packages via paru
+  become: true
+  become_user: "{{ target_user }}"
+  environment:
+    PARU: "1"
+  command:
+    cmd: "paru -S --needed --noconfirm {{ aur_packages | join(' ') }}"
+  when: aur_packages | length > 0
+  changed_when: false
+  register: aur_install
+  failed_when: aur_install.rc != 0 and 'already installed' not in aur_install.stderr
