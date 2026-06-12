@@ -1,0 +1,13 @@
+---
+- name: Bootstrap EndeavourOS i3wm workstation
+  hosts: localhost
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: packages
+    - role: mise
+    - role: network
+    - role: services
+    - role: kernel
+    - role: user
