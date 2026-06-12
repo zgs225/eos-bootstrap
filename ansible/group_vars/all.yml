@@ -16,5 +16,18 @@ user_groups:
 # Services to enable in addition to core_services. Empty by default.
 optional_services: []
 
+# Services relevant only in VM guests (Proxmox, QEMU/KVM, etc.).
+# Leave empty for bare-metal installs. When non-empty, the corresponding
+# cloud-init and qemu-guest-agent systemd services are enabled and started.
+# The packages (cloud-init, qemu-guest-agent) are always installed via
+# pacman_packages.yml regardless of this setting.
+vm_services: []
+# Common examples for a Proxmox/QEMU guest:
+#   - cloud-init-local.service
+#   - cloud-init.service
+#   - cloud-config.service
+#   - cloud-final.service
+#   - qemu-guest-agent.service
+
 # URL of the dotfiles repo (consumed by bootstrap.sh, not by Ansible).
 dotfiles_repo: "git@github.com:you/dotfiles.git"

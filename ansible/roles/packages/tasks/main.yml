@@ -10,3 +10,8 @@
 - name: Conditionally install bluetooth
   ansible.builtin.include_tasks: bluetooth.yml
   tags: [packages, bluetooth]
+
+- name: Configure cloud-init and qemu-guest-agent when running in a VM
+  ansible.builtin.include_tasks: cloud_init.yml
+  when: vm_services | length > 0
+  tags: [packages, cloud-init]

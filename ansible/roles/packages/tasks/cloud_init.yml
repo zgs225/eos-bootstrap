@@ -1,0 +1,14 @@
+---
+- name: Enable cloud-init services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop: "{{ vm_services | select('match', '^cloud-init') | list }}"
+
+- name: Enable and start qemu-guest-agent
+  ansible.builtin.systemd:
+    name: qemu-guest-agent.service
+    enabled: true
+    state: started
+  when: "'qemu-guest-agent.service' in vm_services"

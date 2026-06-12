@@ -54,3 +54,8 @@ pacman_packages:
   - tmux
   # Mise prerequisites
   - mise
+  # Cloud / VM guests (Proxmox, QEMU/KVM)
+  # Packages are always installed; service enablement is controlled by
+  # `vm_services` in group_vars/all.yml.
+  - cloud-init
+  - qemu-guest-agent

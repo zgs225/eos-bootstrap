@@ -107,5 +107,33 @@ Edit `~/.config/mise/config.toml` in the dotfiles repo, then `chezmoi apply` tri
 2. Install git: `sudo pacman -S git`.
 3. `git clone <this-repo> && cd eos-bootstrap`.
 4. Edit `ansible/group_vars/all.yml` to set `dotfiles_repo` to your dotfiles repo URL.
-5. `./bootstrap.sh`.
-6. Verify: `systemctl is-active NetworkManager docker`, `i3` starts at login, `mise list` shows go/python/node/rust.
+5. If running inside a Proxmox/QEMU/KVM guest, also set `vm_services` to the
+   list of systemd units to enable (see the variable's inline comment for the
+   standard Proxmox set). On bare metal, leave it as `[]`.
+6. `./bootstrap.sh`.
+7. Verify: `systemctl is-active NetworkManager docker`, `i3` starts at login,
+   `mise list` shows go/python/node/rust. On a VM guest, also verify
+   `systemctl is-active qemu-guest-agent cloud-init-local cloud-init
+   cloud-config cloud-final`.
+
+## Add a VM-specific service (cloud-init, qemu-guest-agent)
+
+The packages `cloud-init` and `qemu-guest-agent` are installed by default in
+`ansible/roles/packages/vars/pacman_packages.yml`. Service enablement is
+controlled separately by the `vm_services` list in `group_vars/all.yml`:
+
+```yaml
+# ansible/group_vars/all.yml
+vm_services:
+  - cloud-init-local.service
+  - cloud-init.service
+  - cloud-config.service
+  - cloud-final.service
+  - qemu-guest-agent.service
+```
+
+Then re-run `./bootstrap.sh`. The `packages` role's `cloud_init.yml` task
+enables and starts each listed service. Leave `vm_services: []` for
+bare-metal installs; the packages are harmless when not in a VM (cloud-init
+no-ops without a datasource, qemu-guest-agent no-ops without the virtio
+serial channel).
