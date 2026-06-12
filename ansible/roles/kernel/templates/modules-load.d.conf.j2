@@ -1,0 +1,5 @@
+# Managed by Ansible — do not edit by hand.
+# Kernel modules to load at boot.
+{% for mod in kernel_modules %}
+{{ mod }}
+{% endfor %}

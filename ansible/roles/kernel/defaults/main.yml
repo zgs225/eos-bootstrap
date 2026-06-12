@@ -1,0 +1,6 @@
+---
+# Kernel tunables. Edit sysctl.d.conf.j2 for sysctl, and add module
+# names to kernel_modules for modules-load.
+sysctl_path: /etc/sysctl.d/99-eos.conf
+modules_load_path: /etc/modules-load.d/eos.conf
+kernel_modules: []

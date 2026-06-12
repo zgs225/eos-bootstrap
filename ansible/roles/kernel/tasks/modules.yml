@@ -1,0 +1,9 @@
+---
+- name: Deploy modules-load fragment
+  ansible.builtin.template:
+    src: modules-load.d.conf.j2
+    dest: "{{ modules_load_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Load kernel modules

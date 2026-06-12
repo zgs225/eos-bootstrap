@@ -1,0 +1,8 @@
+---
+- name: Configure sysctl
+  ansible.builtin.include_tasks: sysctl.yml
+  tags: [kernel, sysctl]
+
+- name: Configure modules-load
+  ansible.builtin.include_tasks: modules.yml
+  tags: [kernel, modules]

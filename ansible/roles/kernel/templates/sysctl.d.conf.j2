@@ -1,0 +1,15 @@
+# Managed by Ansible — do not edit by hand.
+# Kernel tunables for an i3wm developer workstation.
+
+# File descriptor limits
+fs.file-max = 2097152
+
+# Inotify watchers (neovim, wezterm, file watchers)
+fs.inotify.max_user_watches = 524288
+
+# Better desktop responsiveness under memory pressure
+vm.swappiness = 10
+
+# Network tuning
+net.core.default_qdisc = fq
+net.ipv4.tcp_congestion_control = bbr
