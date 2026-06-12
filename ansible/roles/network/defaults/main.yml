@@ -1,0 +1,3 @@
+---
+# Network role defaults.
+# Add .nmconnection files to files/nmconnection/ to have them deployed.
