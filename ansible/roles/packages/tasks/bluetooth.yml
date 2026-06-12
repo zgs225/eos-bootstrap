@@ -6,12 +6,11 @@
       || lsusb 2>/dev/null | grep -qi 'bluetooth'
   register: bt_hw_check
   changed_when: false
-  failed_when: false
+  failed_when: bt_hw_check.rc not in [0, 1]
   check_mode: false
 
 - name: Install bluez packages (bluetooth hardware detected)
   when: bt_hw_check.rc == 0
-  become: true
   community.general.pacman:
     name:
       - bluez
@@ -20,7 +19,6 @@
 
 - name: Enable and start bluetooth.service (bluetooth hardware detected)
   when: bt_hw_check.rc == 0
-  become: true
   ansible.builtin.systemd:
     name: bluetooth.service
     enabled: true
