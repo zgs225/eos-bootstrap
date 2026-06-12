@@ -91,6 +91,39 @@ tests/idempotency.sh
 chezmoi apply
 ```
 
+## Encrypted dotfiles (age)
+
+When your dotfiles repo contains files encrypted with
+[age](https://age-encryption.org) (files with an `.age` suffix in the chezmoi
+source state), enable the encryption guard:
+
+```yaml
+# ansible/group_vars/all.yml
+dotfiles_use_encryption: true
+```
+
+Before running `./bootstrap.sh`, place your age private key:
+
+```bash
+mkdir -p ~/.config/chezmoi
+# Paste or copy your age identity into this file:
+vim ~/.config/chezmoi/key.txt
+```
+
+Alternatively, set `AGE_KEY_FILE` to point to your identity:
+
+```bash
+export AGE_KEY_FILE=/path/to/age-identity
+./bootstrap.sh
+```
+
+If `dotfiles_use_encryption` is `true` but no identity is found, `bootstrap.sh`
+will `die` with a clear message before invoking chezmoi. The `age` binary is
+installed by the `packages` Ansible role.
+
+The encryption recipient configuration (`[encryption.age] recipient`) lives in
+the dotfiles repo at `.chezmoi/chezmoi.toml` — do not manage it here.
+
 ## Re-apply Ansible only
 
 ```bash
@@ -107,6 +140,11 @@ Edit `~/.config/mise/config.toml` in the dotfiles repo, then `chezmoi apply` tri
 2. Install git: `sudo pacman -S git`.
 3. `git clone <this-repo> && cd eos-bootstrap`.
 4. Edit `ansible/group_vars/all.yml` to set `dotfiles_repo` to your dotfiles repo URL.
+   Optionally set `dotfiles_branch` to clone a specific branch on first init
+   (leave empty for the remote's default branch).
+   If the dotfiles repo contains age-encrypted files, set
+   `dotfiles_use_encryption: true` and place your age private key at
+   `~/.config/chezmoi/key.txt` (or set `$AGE_KEY_FILE`).
 5. If running inside a Proxmox/QEMU/KVM guest, also set `vm_services` to the
    list of systemd units to enable (see the variable's inline comment for the
    standard Proxmox set). On bare metal, leave it as `[]`.

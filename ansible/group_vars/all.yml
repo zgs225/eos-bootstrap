@@ -30,4 +30,13 @@ vm_services: []
 #   - qemu-guest-agent.service
 
 # URL of the dotfiles repo (consumed by bootstrap.sh, not by Ansible).
-dotfiles_repo: "git@github.com:you/dotfiles.git"
+dotfiles_repo: "https://github.com/zgs225/dotfiles.git"
+
+# Branch of the dotfiles repo to clone on first init.
+# Leave empty to use the remote's default branch.
+dotfiles_branch: "chezmoi-migration"
+
+# Set to true when the dotfiles repo contains age-encrypted files.
+# bootstrap.sh will refuse to run unless an age identity is present at
+# ~/.config/chezmoi/key.txt (or $AGE_KEY_FILE).
+dotfiles_use_encryption: true

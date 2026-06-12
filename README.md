@@ -14,7 +14,7 @@ cd ~/Projects/eos-bootstrap
 
 1. Installs `ansible` and `paru` (skip if already present).
 2. Runs the Ansible playbook in `ansible/` (packages, mise, network, services, kernel, user).
-3. Installs `chezmoi` and applies the dotfiles repo.
+3. Installs `chezmoi` and applies the dotfiles repo (set `dotfiles_branch` in `group_vars/all.yml` to clone a non-default branch on first init; set `dotfiles_use_encryption: true` to require an age identity for encrypted dotfiles).
 4. The dotfiles repo handles `mise` tool installs via `run_once_after`.
 
 ## Architecture

@@ -60,6 +60,8 @@ pacman_packages:
   - tmux
   # Mise prerequisites
   - mise
+  # Dotfile encryption (chezmoi age backend)
+  - age
   # Containers
   - docker
   - docker-compose

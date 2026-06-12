@@ -2,12 +2,12 @@
 
 ## What this repo is
 
-`eos-bootstrap` is a single-machine, idempotent bootstrap for an EndeavourOS i3wm developer workstation. `bootstrap.sh` chains: pacman (git/base-devel/ansible) → AUR (`paru`) → `ansible-playbook` → `chezmoi` → `chezmoi init --apply`. See `README.md` for the overview and `docs/runbook.md` for day-to-day edits.
+- `bootstrap.sh` chains: pacman (git/base-devel/ansible) → AUR (`paru`) → `ansible-playbook` → `chezmoi` → `chezmoi init --apply`. When `dotfiles_use_encryption: true`, it checks for an age identity at `~/.config/chezmoi/key.txt` (or `$AGE_KEY_FILE`) before invoking chezmoi and `die`s if missing. See `README.md` for the overview and `docs/runbook.md` for day-to-day edits.
 
 ## Two-repo model (load-bearing)
 
 - **This repo** owns the *coarse* system layer: packages, systemd services, kernel tunables, NetworkManager connection profiles, user groups, sudoers, polkit.
-- **Dotfiles repo** (separate, URL in `ansible/group_vars/all.yml::dotfiles_repo`) owns the *fine* user layer: `~/.config/**`, i3/polybar/rofi/dunst/picom configs, GTK themes, and `~/.config/mise/config.toml`.
+- **Dotfiles repo** (separate, URL in `ansible/group_vars/all.yml::dotfiles_repo`, branch in `dotfiles_branch`) owns the *fine* user layer: `~/.config/**`, i3/polybar/rofi/dunst/picom configs, GTK themes, and `~/.config/mise/config.toml`.
 
 Boundary rule — do not violate:
 - Ansible never writes under `~`.
@@ -16,9 +16,9 @@ Boundary rule — do not violate:
 
 ## Layout (entry points)
 
-- `bootstrap.sh` — top-level entry; resolves `dotfiles_repo` by **grepping `ansible/group_vars/all.yml`** (not via `ansible-inventory`). Keep that grep pattern stable.
+- `bootstrap.sh` — top-level entry; resolves `dotfiles_repo` / `dotfiles_branch` / `dotfiles_use_encryption` by **grepping `ansible/group_vars/all.yml`** (not via `ansible-inventory`). Keep those grep patterns stable.
 - `ansible/playbook.yml` — single playbook, `hosts: localhost`, `become: true`. Role order is significant: `packages → mise → services → network → kernel → user`.
-- `ansible/group_vars/all.yml` — the only place to set per-machine identity: `target_user`, `user_groups`, `optional_services`, `vm_services`, `dotfiles_repo`.
+- `ansible/group_vars/all.yml` — the only place to set per-machine identity: `target_user`, `user_groups`, `optional_services`, `vm_services`, `dotfiles_repo`, `dotfiles_branch`, `dotfiles_use_encryption`.
 - `ansible/roles/services/vars/core_services.yml` — hardcoded, code-review required. `optional_services` (in `group_vars`) is the free-form list.
 - `ansible/roles/packages/vars/pacman_packages.yml` and `aur_packages.yml` — package lists. AUR is installed via `paru` with `become_user: target_user` and `PARU=1`; requires `paru` to already be on PATH (installed by `bootstrap.sh` step 2, not by Ansible).
 - `ansible/roles/network/files/nmconnection/*.nmconnection` — drop-in: any file here is `copy`-deployed to `/etc/NetworkManager/system-connections/` as `root:root 0600` and triggers a NetworkManager reload. `.gitkeep` is intentionally excluded by the glob.
@@ -58,6 +58,7 @@ tests/idempotency.sh
 ## Gotchas an agent would otherwise miss
 
 - **`dotfiles_repo` must be set** in `ansible/group_vars/all.yml` before `./bootstrap.sh` runs; the script dies with `dotfiles_repo not set` otherwise. SSH URLs (e.g., `git@github.com:...`) are fine and are the default.
+- **`dotfiles_use_encryption` requires a pre-placed age identity.** When `true`, `bootstrap.sh` checks for `~/.config/chezmoi/key.txt` (or `$AGE_KEY_FILE`) before invoking chezmoi. The `age` package is installed by the `packages` role. The encryption config (`[encryption.age] recipient`) lives in the dotfiles repo's `.chezmoi/chezmoi.toml`. Do not add identity-fetching logic to `bootstrap.sh` — key placement is manual by design.
 - **`vm_services` gates service enablement only.** `cloud-init` and `qemu-guest-agent` packages always install via `pacman_packages.yml`; they're harmless on bare metal (no-op without a virtio serial channel / datasource). Set `vm_services` to the standard Proxmox set (5 units) only on VM guests.
 - **Mise tool versions live in the dotfiles repo**, not here. `ansible/roles/mise/tasks/main.yml` only installs the `mise` binary; `mise install` runs from a `run_once_after_*` script in the dotfiles repo.
 - **First run is not 100% Ansible-managed**: `paru` is bootstrapped by bash (no Ansible module for building it). The guard `if ! command -v paru` keeps re-runs safe.
