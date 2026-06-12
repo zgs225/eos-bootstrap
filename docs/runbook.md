@@ -88,7 +88,7 @@ tests/idempotency.sh
 ## Re-apply dotfiles only
 
 ```bash
-chezmoi apply
+chezmoi update
 ```
 
 ## Encrypted dotfiles (age)
@@ -132,7 +132,7 @@ ansible-playbook ansible/playbook.yml --ask-become-pass
 
 ## Update mise tool versions
 
-Edit `~/.config/mise/config.toml` in the dotfiles repo, then `chezmoi apply` triggers `run_once_after_*` which runs `mise install`.
+Edit `~/.config/mise/config.toml` in the dotfiles repo, then `chezmoi update` triggers `run_once_after_*` which runs `mise install`.
 
 ## Smoke test (fresh VM)
 

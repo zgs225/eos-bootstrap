@@ -2,7 +2,7 @@
 
 ## What this repo is
 
-- `bootstrap.sh` chains: pacman (git/base-devel/ansible) → AUR (`paru`) → `ansible-playbook` → `chezmoi` → `chezmoi init --apply`. When `dotfiles_use_encryption: true`, it checks for an age identity at `~/.config/chezmoi/key.txt` (or `$AGE_KEY_FILE`) before invoking chezmoi and `die`s if missing. See `README.md` for the overview and `docs/runbook.md` for day-to-day edits.
+- `bootstrap.sh` chains: pacman (git/base-devel/ansible) → AUR (`paru`) → `ansible-playbook` → `chezmoi` → `chezmoi init --apply` (or `chezmoi update`). When `dotfiles_use_encryption: true`, it checks for an age identity at `~/.config/chezmoi/key.txt` (or `$AGE_KEY_FILE`) before invoking chezmoi and `die`s if missing. See `README.md` for the overview and `docs/runbook.md` for day-to-day edits.
 
 ## Two-repo model (load-bearing)
 
@@ -37,7 +37,7 @@ Boundary rule — do not violate:
 ansible-playbook ansible/playbook.yml --ask-become-pass
 
 # Re-apply dotfiles only
-chezmoi apply
+chezmoi update
 
 # Lint (ansible-lint, yamllint, shellcheck)
 tests/lint.sh
