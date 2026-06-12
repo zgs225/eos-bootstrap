@@ -11,3 +11,4 @@
     - role: network
     - role: kernel
     - role: user
+    - role: display

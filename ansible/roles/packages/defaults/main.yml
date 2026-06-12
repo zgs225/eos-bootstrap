@@ -21,6 +21,9 @@ pacman_packages:
   # Networking
   - networkmanager
   - nm-connection-editor
+  # Xorg / X11 (startx + i3 — no display manager)
+  - xorg-server
+  - xorg-xinit
   # i3wm ecosystem
   - i3-wm
   - i3status

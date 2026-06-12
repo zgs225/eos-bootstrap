@@ -1,0 +1,4 @@
+---
+- name: Configure getty autologin
+  ansible.builtin.include_tasks: autologin.yml
+  tags: [display, autologin]

@@ -1,0 +1,24 @@
+---
+- name: Create getty autologin override directory
+  vars:
+    unit_dir: "/etc/systemd/system/getty@{{ display_autologin_tty }}.service.d"
+  ansible.builtin.file:
+    path: "{{ unit_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy getty autologin override
+  vars:
+    unit_dir: "/etc/systemd/system/getty@{{ display_autologin_tty }}.service.d"
+  ansible.builtin.copy:
+    dest: "{{ unit_dir }}/autologin.conf"
+    content: |
+      [Service]
+      ExecStart=
+      ExecStart=-/sbin/agetty --autologin {{ target_user }} --noclear %I $TERM
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd

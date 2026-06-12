@@ -17,7 +17,7 @@ Boundary rule — do not violate:
 ## Layout (entry points)
 
 - `bootstrap.sh` — top-level entry; resolves `dotfiles_repo` / `dotfiles_branch` / `dotfiles_use_encryption` by **grepping `ansible/group_vars/all.yml`** (not via `ansible-inventory`). Keep those grep patterns stable.
-- `ansible/playbook.yml` — single playbook, `hosts: localhost`, `become: true`. Role order is significant: `packages → mise → services → network → kernel → user`.
+- `ansible/playbook.yml` — single playbook, `hosts: localhost`, `become: true`. Role order is significant: `packages → mise → services → network → kernel → user → display`.
 - `ansible/group_vars/all.yml` — the only place to set per-machine identity: `target_user`, `user_groups`, `optional_services`, `vm_services`, `dotfiles_repo`, `dotfiles_branch`, `dotfiles_use_encryption`.
 - `ansible/roles/services/vars/core_services.yml` — hardcoded, code-review required. `optional_services` (in `group_vars`) is the free-form list.
 - `ansible/roles/packages/vars/pacman_packages.yml` and `aur_packages.yml` — package lists. AUR is installed via `paru` with `become_user: target_user` and `PARU=1`; requires `paru` to already be on PATH (installed by `bootstrap.sh` step 2, not by Ansible).
@@ -26,6 +26,7 @@ Boundary rule — do not violate:
 - `ansible/roles/kernel/templates/sysctl.d.conf.j2` — sysctl tunables (file-max, inotify, swappiness, BBR). Handler `Apply sysctl` runs `sysctl --system`.
 - `ansible/roles/kernel/defaults/main.yml::kernel_modules` — append module names here; rendered to `/etc/modules-load.d/eos.conf`.
 - `ansible/roles/packages/tasks/bluetooth.yml` — auto-detects bluetooth via `lspci -k` / `lsusb` and conditionally installs `bluez` + `bluez-utils` and enables `bluetooth.service`. No manual gate.
+- `ansible/roles/display/tasks/autologin.yml` — creates a systemd drop-in at `/etc/systemd/system/getty@tty1.service.d/autologin.conf` to auto-login `target_user` on tty1 (VM autologin → startx → i3 chain). Defaults `display_autologin_tty: tty1`.
 
 ## Commands
 
@@ -67,3 +68,4 @@ tests/idempotency.sh
 - **No firewall (`ufw`) is installed or configured** by design. Don't add it without a spec change.
 - **`user_groups` is appended**, not replaced (`append: true` in `groups.yml`) — adding a new group won't drop existing memberships.
 - The dotfiles repo is expected to be writable via the user's normal SSH key; the bootstrap script does not configure `~/.ssh/config` — that's the dotfiles repo's job.
+- **Display chain needs dotfiles-repo coordination.** The `display` role only installs Xorg packages and configures agetty autologin on tty1. The rest of the chain is in the dotfiles repo: `~/.xinitrc` must exec i3, and `~/.zprofile` must conditionally run `startx` on tty1 (`[ -z "${DISPLAY}" ] && [ "${XDG_VTNR}" -eq 1 ] && exec startx`). These are user-level files, so they belong in chezmoi, not this repo.
