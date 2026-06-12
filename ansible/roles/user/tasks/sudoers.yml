@@ -1,0 +1,11 @@
+---
+- name: Deploy wheel sudoers NOPASSWD fragment
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/10-wheel-nopasswd
+    content: |
+      # Managed by Ansible — do not edit by hand.
+      %wheel ALL=(ALL:ALL) NOPASSWD: ALL
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s"

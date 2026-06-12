@@ -1,0 +1,12 @@
+---
+- name: Configure user groups
+  ansible.builtin.include_tasks: groups.yml
+  tags: [user, groups]
+
+- name: Configure sudoers
+  ansible.builtin.include_tasks: sudoers.yml
+  tags: [user, sudoers]
+
+- name: Configure polkit
+  ansible.builtin.include_tasks: polkit.yml
+  tags: [user, polkit]

@@ -1,0 +1,20 @@
+---
+- name: Ensure /etc/polkit-1/rules.d exists
+  ansible.builtin.file:
+    path: /etc/polkit-1/rules.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy polkit rules
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/etc/polkit-1/rules.d/{{ item | basename }}"
+    owner: root
+    group: root
+    mode: "0644"
+  with_fileglob:
+    - "polkit/*"
+  loop_control:
+    label: "{{ item | basename }}"
