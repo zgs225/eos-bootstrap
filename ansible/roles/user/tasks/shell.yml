@@ -1,0 +1,16 @@
+---
+- name: Read current login shell for target_user
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ target_user }}"
+  register: user_passwd_entry
+  changed_when: false
+  check_mode: false
+
+- name: Set target_user login shell to zsh
+  ansible.builtin.command:
+    cmd: "chsh -s /usr/bin/zsh {{ target_user }}"
+  when:
+    - user_passwd_entry.ansible_facts.getent_passwd[target_user][-1] | string != '/usr/bin/zsh'
+  changed_when: true
+  tags: [user, shell]

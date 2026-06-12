@@ -3,6 +3,5 @@
   ansible.builtin.user:
     name: "{{ target_user }}"
     state: present
-    shell: /usr/bin/zsh
     groups: "{{ user_groups }}"
     append: true

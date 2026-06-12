@@ -3,6 +3,10 @@
   ansible.builtin.include_tasks: groups.yml
   tags: [user, groups]
 
+- name: Configure login shell
+  ansible.builtin.include_tasks: shell.yml
+  tags: [user, shell]
+
 - name: Configure sudoers
   ansible.builtin.include_tasks: sudoers.yml
   tags: [user, sudoers]
