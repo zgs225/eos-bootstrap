@@ -3,19 +3,22 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ANSIBLE_DIR="${REPO_ROOT}/ansible"
-DOTFILES_REPO="$(ansible-inventory -i "${ANSIBLE_DIR}/inventory" --export all.yml 2>/dev/null \
-  | grep '^DOTFILES_REPO' | cut -d= -f2- | tr -d '"' || true)"
-
-# Fallback: parse group_vars/all.yml directly if ansible-inventory not available yet
-if [[ -z "${DOTFILES_REPO:-}" ]]; then
-  DOTFILES_REPO="$(grep -E '^\s*dotfiles_repo:' "${ANSIBLE_DIR}/group_vars/all.yml" \
-    | sed -E 's/.*dotfiles_repo:\s*"?([^"]+)"?\s*/\1/')"
-fi
+GROUP_VARS="${ANSIBLE_DIR}/group_vars/all.yml"
 
 log() { printf '\033[1;34m[bootstrap]\033[0m %s\n' "$*"; }
 die() { printf '\033[1;31m[bootstrap]\033[0m %s\n' "$*" >&2; exit 1; }
 
 command -v sudo >/dev/null 2>&1 || die "sudo is required"
+
+# Resolve DOTFILES_REPO from group_vars/all.yml.
+DOTFILES_REPO=""
+if [[ -f "${GROUP_VARS}" ]]; then
+  DOTFILES_REPO="$(grep -E '^\s*dotfiles_repo:' "${GROUP_VARS}" \
+    | sed -E 's/.*dotfiles_repo:\s*"?([^"]+)"?\s*/\1/')"
+fi
+if [[ -z "${DOTFILES_REPO}" ]]; then
+  die "dotfiles_repo not set in ${GROUP_VARS}"
+fi
 
 # ---------- 1. Base packages via pacman ----------
 log "Ensuring base packages (git, base-devel, ansible)"
@@ -29,8 +32,10 @@ done
 if ! command -v paru >/dev/null 2>&1; then
   log "Installing paru from AUR"
   tmp="$(mktemp -d)"
+  trap 'rm -rf "$tmp"' EXIT
   git clone https://aur.archlinux.org/paru.git "$tmp/paru"
   (cd "$tmp/paru" && makepkg -si --noconfirm)
+  trap - EXIT
   rm -rf "$tmp"
 else
   log "paru already installed"
