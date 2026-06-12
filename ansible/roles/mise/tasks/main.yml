@@ -1,0 +1,10 @@
+---
+- name: Install mise via pacman
+  community.general.pacman:
+    name: mise
+    state: present
+    update_cache: true
+
+# Note: Tool versions are NOT installed here. They are declared in
+# ~/.config/mise/config.toml (managed by chezmoi), and `mise install`
+# runs from a `run_once_after_*` script in the dotfiles repo.
