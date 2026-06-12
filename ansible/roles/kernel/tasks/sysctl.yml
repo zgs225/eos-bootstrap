@@ -7,10 +7,3 @@
     group: root
     mode: "0644"
   notify: Apply sysctl
-
-- name: Apply sysctl settings
-  become: true
-  ansible.builtin.command:
-    cmd: "sysctl -p {{ sysctl_path }}"
-  register: sysctl_apply
-  changed_when: "'Applying' in sysctl_apply.stdout or sysctl_apply.rc == 0"
