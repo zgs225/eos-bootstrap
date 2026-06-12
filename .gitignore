@@ -1,0 +1,18 @@
+# Ansible
+*.retry
+.ansible/
+roles/*/.ansible/
+
+# Python
+__pycache__/
+*.pyc
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Local override
+.envrc
