@@ -1,0 +1,56 @@
+---
+# Packages installed from the official Arch / EndeavourOS repositories.
+# Grouped by purpose; remove a line to uninstall.
+pacman_packages:
+  # Base
+  - sudo
+  - vim
+  - curl
+  - wget
+  - jq
+  - unzip
+  - zip
+  - tree
+  - htop
+  # Networking
+  - networkmanager
+  - nm-connection-editor
+  # i3wm ecosystem
+  - i3-wm
+  - i3status
+  - i3lock
+  - polybar
+  - rofi
+  - dunst
+  - picom
+  - feh
+  - arandr
+  - lxappearance
+  # Theming
+  - gtk3
+  - gtk4
+  - papirus-icon-theme
+  - noto-fonts
+  - noto-fonts-emoji
+  - ttf-dejavu
+  # Development
+  - git
+  - base-devel
+  - openssh
+  - rsync
+  - ripgrep
+  - fd
+  - fzf
+  - bat
+  - eza
+  # Shell
+  - zsh
+  - zsh-completions
+  - zsh-syntax-highlighting
+  # Editors
+  - neovim
+  # Terminal
+  - wezterm
+  - tmux
+  # Mise prerequisites
+  - mise

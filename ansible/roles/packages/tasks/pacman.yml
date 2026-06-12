@@ -1,0 +1,6 @@
+---
+- name: Install pacman packages
+  community.general.pacman:
+    name: "{{ pacman_packages }}"
+    state: present
+    update_cache: true
