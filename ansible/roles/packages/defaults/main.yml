@@ -62,7 +62,7 @@ pacman_packages:
   - mise
   # Containers
   - docker
-  - docker-compose-plugin
+  - docker-compose
   # Cloud / VM guests (Proxmox, QEMU/KVM)
   # Packages are always installed; service enablement is controlled by
   # `vm_services` in group_vars/all.yml.
