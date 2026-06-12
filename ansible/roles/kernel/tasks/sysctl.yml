@@ -9,6 +9,7 @@
   notify: Apply sysctl
 
 - name: Apply sysctl settings
+  become: true
   ansible.builtin.command:
     cmd: "sysctl -p {{ sysctl_path }}"
   register: sysctl_apply
