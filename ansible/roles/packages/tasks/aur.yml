@@ -8,5 +8,6 @@
     cmd: "paru -S --needed --noconfirm {{ aur_packages | join(' ') }}"
   when: aur_packages | length > 0
   changed_when: false
+  check_mode: false
   register: aur_install
-  failed_when: aur_install.rc != 0 and 'already installed' not in aur_install.stderr
+  failed_when: aur_install.rc != 0
