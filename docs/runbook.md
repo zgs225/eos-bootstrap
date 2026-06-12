@@ -106,5 +106,6 @@ Edit `~/.config/mise/config.toml` in the dotfiles repo, then `chezmoi apply` tri
 1. Boot EndeavourOS installer, install base system.
 2. Install git: `sudo pacman -S git`.
 3. `git clone <this-repo> && cd eos-bootstrap`.
-4. `./bootstrap.sh`.
-5. Verify: `systemctl is-active NetworkManager docker`, `i3` starts at login, `mise list` shows go/python/node/rust.
+4. Edit `ansible/group_vars/all.yml` to set `dotfiles_repo` to your dotfiles repo URL.
+5. `./bootstrap.sh`.
+6. Verify: `systemctl is-active NetworkManager docker`, `i3` starts at login, `mise list` shows go/python/node/rust.
