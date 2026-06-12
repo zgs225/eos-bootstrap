@@ -1,5 +1,0 @@
----
-# Packages installed from the AUR via paru.
-aur_packages: []
-  # Add AUR packages here, e.g.:
-  # - google-chrome

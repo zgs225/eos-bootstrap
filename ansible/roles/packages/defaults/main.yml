@@ -1,2 +1,71 @@
 ---
-# Defaults for the packages role.
+# Defaults for the packages role. Loaded automatically into the role's
+# variable scope and may be overridden by group_vars/all.yml or
+# --extra-vars.
+#
+# The vars/ directory is intentionally NOT used for these lists: Ansible
+# only auto-loads vars/main.yml from a role, not sibling files like
+# vars/pacman_packages.yml. See the design spec for the rationale.
+
+pacman_packages:
+  # Base
+  - sudo
+  - vim
+  - curl
+  - wget
+  - jq
+  - unzip
+  - zip
+  - tree
+  - htop
+  # Networking
+  - networkmanager
+  - nm-connection-editor
+  # i3wm ecosystem
+  - i3-wm
+  - i3status
+  - i3lock
+  - polybar
+  - rofi
+  - dunst
+  - picom
+  - feh
+  - arandr
+  - lxappearance
+  # Theming
+  - gtk3
+  - gtk4
+  - papirus-icon-theme
+  - noto-fonts
+  - noto-fonts-emoji
+  - ttf-dejavu
+  # Development
+  - git
+  - base-devel
+  - openssh
+  - rsync
+  - ripgrep
+  - fd
+  - fzf
+  - bat
+  - eza
+  # Shell
+  - zsh
+  - zsh-completions
+  - zsh-syntax-highlighting
+  # Editors
+  - neovim
+  # Terminal
+  - wezterm
+  - tmux
+  # Mise prerequisites
+  - mise
+  # Cloud / VM guests (Proxmox, QEMU/KVM)
+  # Packages are always installed; service enablement is controlled by
+  # `vm_services` in group_vars/all.yml.
+  - cloud-init
+  - qemu-guest-agent
+
+aur_packages: []
+  # Add AUR packages here, e.g.:
+  # - google-chrome

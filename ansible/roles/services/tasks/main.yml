@@ -1,4 +1,7 @@
 ---
+- name: Load core services list from role vars file
+  ansible.builtin.include_vars: core_services.yml
+
 - name: Combine core and optional services
   ansible.builtin.set_fact:
     all_services: "{{ core_services + optional_services }}"

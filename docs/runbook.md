@@ -7,7 +7,7 @@ Day-to-day operations for this bootstrap.
 Pacman:
 
 ```yaml
-# ansible/roles/packages/vars/pacman_packages.yml
+# ansible/roles/packages/defaults/main.yml
 pacman_packages:
   - <new-package>
 ```
@@ -21,7 +21,7 @@ Then re-run:
 AUR:
 
 ```yaml
-# ansible/roles/packages/vars/aur_packages.yml
+# ansible/roles/packages/defaults/main.yml
 aur_packages:
   - <new-aur-package>
 ```
@@ -119,7 +119,7 @@ Edit `~/.config/mise/config.toml` in the dotfiles repo, then `chezmoi apply` tri
 ## Add a VM-specific service (cloud-init, qemu-guest-agent)
 
 The packages `cloud-init` and `qemu-guest-agent` are installed by default in
-`ansible/roles/packages/vars/pacman_packages.yml`. Service enablement is
+`ansible/roles/packages/defaults/main.yml`. Service enablement is
 controlled separately by the `vm_services` list in `group_vars/all.yml`:
 
 ```yaml

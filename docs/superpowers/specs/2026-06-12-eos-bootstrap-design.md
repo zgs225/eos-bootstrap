@@ -128,9 +128,15 @@ core_services:
 # by roles/packages/tasks/bluetooth.yml based on hardware detection.
 ```
 
+Loaded via `ansible.builtin.include_vars: core_services.yml` at the top of `roles/services/tasks/main.yml`. This is required because the file is not named `main.yml` and therefore not auto-loaded from `vars/`. Placing the list in `defaults/` would conflict with the spec's "hardcoded, code-reviewed, not overridable" intent (defaults are the lowest-precedence layer and are meant to be overridable). The `include_vars` approach preserves the hardcoded semantic while making the variable visible to role tasks.
+
 ### `roles/packages/vars/pacman_packages.yml` and `aur_packages.yml`
 
-YAML lists of package names, grouped by concern. Initial contents not enumerated in this spec — populated during implementation.
+**Renamed/moved to `roles/packages/defaults/main.yml`.**
+
+The original spec placed the package lists in `roles/packages/vars/` as `pacman_packages.yml` and `aur_packages.yml`. Implementation revealed that Ansible only auto-loads `vars/main.yml` from a role, not sibling files in `vars/`. The original layout caused `'pacman_packages' is undefined` errors at runtime.
+
+The fix: move the lists to `roles/packages/defaults/main.yml` with `pacman_packages` and `aur_packages` as top-level keys. `role defaults/` is auto-loaded. The lists may be overridden by `group_vars/all.yml` or `--extra-vars`, which is consistent with the spec's earlier statement that GUI app packages and other opt-in selections are variable-driven.
 
 ### `roles/packages/tasks/bluetooth.yml` (conditional)
 
@@ -166,7 +172,7 @@ user runs bootstrap.sh
 
 **Day-to-day update path:**
 
-- Add a package: edit the relevant vars file, run `ansible-playbook`
+- Add a package: edit `roles/packages/defaults/main.yml`, run `ansible-playbook`
 - Add a service: edit `core_services.yml`, run `ansible-playbook`
 - Change a dotfile: edit in dotfiles repo, `chezmoi apply`
 
@@ -202,15 +208,13 @@ eos-bootstrap/
 │   │   └── all.yml
 │   └── roles/
 │       ├── packages/
-│       │   ├── defaults/main.yml
-│       │   ├── vars/
-│       │   │   ├── pacman_packages.yml
-│       │   │   └── aur_packages.yml
+│       │   ├── defaults/main.yml    # pacman_packages, aur_packages
 │       │   └── tasks/
 │       │       ├── main.yml
 │       │       ├── pacman.yml
 │       │       ├── aur.yml
-│       │       └── bluetooth.yml
+│       │       ├── bluetooth.yml
+│       │       └── cloud_init.yml
 │       ├── mise/
 │       │   ├── tasks/main.yml
 │       │   └── handlers/main.yml

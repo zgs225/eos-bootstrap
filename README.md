@@ -28,6 +28,6 @@ See [docs/superpowers/specs/2026-06-12-eos-bootstrap-design.md](docs/superpowers
 
 ## Day-to-day
 
-- Add a package: edit `ansible/roles/packages/vars/pacman_packages.yml` (or `aur_packages.yml`) and run `./bootstrap.sh`.
+- Add a package: edit `ansible/roles/packages/defaults/main.yml` and run `./bootstrap.sh`.
 - Add a service: edit `ansible/roles/services/vars/core_services.yml` and run `./bootstrap.sh`.
 - Add a dotfile: edit in the dotfiles repo, then `chezmoi apply`.
