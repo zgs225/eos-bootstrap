@@ -8,17 +8,23 @@ PLAYBOOK="ansible/playbook.yml"
 LIMIT="${LIMIT:-localhost}"
 
 echo "==> first run"
-ansible-playbook "${PLAYBOOK}" --limit "${LIMIT}" --diff > /tmp/run1.log 2>&1 \
-  || { tail -50 /tmp/run1.log; exit 1; }
+if ! ansible-playbook "${PLAYBOOK}" --limit "${LIMIT}" --diff > /tmp/run1.log 2>&1; then
+  echo "ERROR: first run failed"
+  tail -50 /tmp/run1.log
+  exit 1
+fi
 
 echo "==> second run"
-ansible-playbook "${PLAYBOOK}" --limit "${LIMIT}" --diff > /tmp/run2.log 2>&1 \
-  || { tail -50 /tmp/run2.log; exit 1; }
+if ! ansible-playbook "${PLAYBOOK}" --limit "${LIMIT}" --diff > /tmp/run2.log 2>&1; then
+  echo "ERROR: second run failed"
+  tail -50 /tmp/run2.log
+  exit 1
+fi
 
 echo "==> checking for changes on second run"
-if grep -E "^\s*changed:.*localhost" /tmp/run2.log; then
+if grep -A 1 "^PLAY RECAP" /tmp/run2.log | grep -qE "changed=[1-9]"; then
   echo "ERROR: second run produced changes — playbook is not idempotent"
-  grep -B 2 -A 5 "changed:" /tmp/run2.log
+  grep -B 2 -A 10 "changed=[1-9]" /tmp/run2.log
   exit 1
 fi
 
