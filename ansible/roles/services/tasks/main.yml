@@ -1,0 +1,13 @@
+---
+- name: Combine core and optional services
+  ansible.builtin.set_fact:
+    all_services: "{{ core_services + optional_services }}"
+
+- name: Enable and start services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop: "{{ all_services }}"
+  loop_control:
+    label: "{{ item }}"

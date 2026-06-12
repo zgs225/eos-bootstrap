@@ -1,0 +1,9 @@
+---
+# Services every machine of this type runs. Changes require code review.
+# Bluetooth is intentionally NOT here — it is enabled conditionally by
+# roles/packages/tasks/bluetooth.yml based on hardware detection.
+core_services:
+  - NetworkManager.service
+  - docker.service
+  - fstrim.timer
+  - sshd.service
