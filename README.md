@@ -13,7 +13,7 @@ cd ~/Projects/eos-bootstrap
 ## What it does
 
 1. Installs `ansible` and `paru` (skip if already present).
-2. Runs the Ansible playbook in `ansible/` (packages, services, kernel, user, network).
+2. Runs the Ansible playbook in `ansible/` (packages, mise, network, services, kernel, user).
 3. Installs `chezmoi` and applies the dotfiles repo.
 4. The dotfiles repo handles `mise` tool installs via `run_once_after`.
 

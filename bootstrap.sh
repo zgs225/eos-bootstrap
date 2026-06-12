@@ -58,10 +58,6 @@ else
 fi
 
 # ---------- 5. Apply dotfiles ----------
-if [[ -z "${DOTFILES_REPO}" ]]; then
-  die "DOTFILES_REPO not set in ansible/group_vars/all.yml"
-fi
-
 if [[ -d "${HOME}/.local/share/chezmoi" ]]; then
   log "Dotfiles already initialized; running chezmoi apply"
   chezmoi apply

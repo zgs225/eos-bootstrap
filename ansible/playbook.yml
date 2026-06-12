@@ -7,7 +7,7 @@
   roles:
     - role: packages
     - role: mise
-    - role: network
     - role: services
+    - role: network
     - role: kernel
     - role: user
