@@ -285,7 +285,7 @@ git -c user.email=bootstrap@local -c user.name=bootstrap commit -m "chore: add a
 # Coarse-layer variables. Edits here are part of the machine's identity.
 
 # The user this machine is being bootstrapped for.
-target_user: "{{ ansible_user_id }}"
+target_user: "{{ ansible_facts['user_id'] }}"
 
 # User groups target_user should be added to.
 user_groups:

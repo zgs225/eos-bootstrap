@@ -97,7 +97,7 @@ Pre-existing repo currently managed by `rcup`. This spec requires migrating it t
 ### `group_vars/all.yml` (coarse layer — Ansible variables)
 
 ```yaml
-target_user: "{{ ansible_user_id }}"
+target_user: "{{ ansible_facts['user_id'] }}"
 
 # Optional services (extra to core_services); empty by default
 optional_services: []
