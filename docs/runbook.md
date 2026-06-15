@@ -176,4 +176,12 @@ Then re-run `./bootstrap.sh`. The `packages` role's `cloud_init.yml` task
 enables and starts each listed service. Leave `vm_services: []` for
 bare-metal installs; the packages are harmless when not in a VM (cloud-init
 no-ops without a datasource, qemu-guest-agent no-ops without the virtio
-serial channel).
+ serial channel).
+
+## Chinese input not working
+
+1. Confirm packages installed: `pacman -Q fcitx5 fcitx5-chinese-addons fcitx5-gtk fcitx5-qt fcitx5-configtool`
+2. Confirm daemon running: `pgrep -a fcitx5` (empty = not started; check i3 config has `exec --no-startup-id fcitx5 -d`)
+3. Confirm env vars in X session: `echo "$GTK_IM_MODULE $QT_IM_MODULE $XMODIFIERS $SDL_IM_MODULE"` should print `fcitx fcitx @im=fcitx fcitx`. If blank, `~/.xprofile` is not being sourced — verify `startx` chain in `~/.zprofile`.
+4. Run `fcitx5-diagnose` and read the output.
+5. Open `fcitx5-configtool` to verify Pinyin is listed under "Available Input Methods" and ticked under "Current Input Methods".
