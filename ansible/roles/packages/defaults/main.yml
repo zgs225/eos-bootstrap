@@ -80,6 +80,9 @@ pacman_packages:
   - cloud-init
   - qemu-guest-agent
 
-aur_packages: []
-  # Add AUR packages here, e.g.:
+aur_packages:
+  # Fonts (nerd fonts for terminal icons: powerline, symbols, file icons)
+  - nerd-fonts
+  - noto-fonts-emoji-nerd
+  # Add more AUR packages here, e.g.:
   # - google-chrome
