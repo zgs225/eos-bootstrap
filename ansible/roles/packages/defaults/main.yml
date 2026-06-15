@@ -42,6 +42,12 @@ pacman_packages:
   - noto-fonts-cjk
   - noto-fonts-emoji
   - ttf-dejavu
+  # Input method (Chinese pinyin via fcitx5)
+  - fcitx5
+  - fcitx5-chinese-addons
+  - fcitx5-gtk
+  - fcitx5-qt
+  - fcitx5-configtool
   # Development
   - git
   - base-devel
