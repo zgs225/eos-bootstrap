@@ -88,8 +88,10 @@ tests/idempotency.sh
 ## Re-apply dotfiles only
 
 ```bash
-chezmoi update
+chezmoi update --init
 ```
+
+The `--init` flag regenerates `~/.config/chezmoi/chezmoi.toml` from the dotfiles repo's `.chezmoi.<format>.tmpl` before applying, so edits to that template take effect on the next re-run.
 
 ## Encrypted dotfiles (age)
 
@@ -132,7 +134,7 @@ ansible-playbook ansible/playbook.yml --ask-become-pass
 
 ## Update mise tool versions
 
-Edit `~/.config/mise/config.toml` in the dotfiles repo, then `chezmoi update` triggers `run_once_after_*` which runs `mise install`.
+Edit `~/.config/mise/config.toml` in the dotfiles repo, then `chezmoi update --init` triggers `run_once_after_*` which runs `mise install`.
 
 ## Smoke test (fresh VM)
 

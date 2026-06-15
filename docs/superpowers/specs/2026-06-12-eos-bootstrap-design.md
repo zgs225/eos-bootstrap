@@ -168,7 +168,7 @@ user runs bootstrap.sh
 - pacman `--needed` skips installed packages
 - paru `--needed` skips installed AUR packages
 - Ansible re-runs are no-ops unless state changed
-- `chezmoi init --apply` is a no-op if already initialized; `chezmoi apply` can be re-run separately
+- `chezmoi init --apply` does NOT re-clone or pull when the source dir already exists, but it DOES regenerate the config from `.chezmoi.<format>.tmpl` and re-apply. For subsequent runs `chezmoi update --init` is the canonical command — it pulls remote changes, regenerates config from the template, and applies in one step.
 
 **Day-to-day update path:**
 

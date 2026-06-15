@@ -2,7 +2,7 @@
 
 ## What this repo is
 
-- `bootstrap.sh` chains: pacman (git/base-devel/ansible) → AUR (`paru`) → `ansible-playbook` → `chezmoi` → `chezmoi init --apply` (or `chezmoi update`). When `dotfiles_use_encryption: true`, it checks for an age identity at `~/.config/chezmoi/key.txt` (or `$AGE_KEY_FILE`) before invoking chezmoi and `die`s if missing. See `README.md` for the overview and `docs/runbook.md` for day-to-day edits.
+- `bootstrap.sh` chains: pacman (git/base-devel/ansible) → AUR (`paru`) → `ansible-playbook` → `chezmoi` → `chezmoi init --apply` (or `chezmoi update --init`). The `--init` flag on the `update` branch regenerates `~/.config/chezmoi/chezmoi.toml` from the dotfiles repo's `.chezmoi.<format>.tmpl` before applying, so re-running bootstrap picks up edits to that template. When `dotfiles_use_encryption: true`, it checks for an age identity at `~/.config/chezmoi/key.txt` (or `$AGE_KEY_FILE`) before invoking chezmoi and `die`s if missing. See `README.md` for the overview and `docs/runbook.md` for day-to-day edits.
 
 ## Two-repo model (load-bearing)
 
@@ -38,7 +38,7 @@ Boundary rule — do not violate:
 ansible-playbook ansible/playbook.yml --ask-become-pass
 
 # Re-apply dotfiles only
-chezmoi update
+chezmoi update --init
 
 # Lint (ansible-lint, yamllint, shellcheck)
 tests/lint.sh
@@ -62,6 +62,7 @@ tests/idempotency.sh
 - **`dotfiles_use_encryption` requires a pre-placed age identity.** When `true`, `bootstrap.sh` checks for `~/.config/chezmoi/key.txt` (or `$AGE_KEY_FILE`) before invoking chezmoi. The `age` package is installed by the `packages` role. The encryption config (`[encryption.age] recipient`) lives in the dotfiles repo's `.chezmoi/chezmoi.toml`. Do not add identity-fetching logic to `bootstrap.sh` — key placement is manual by design.
 - **`vm_services` gates service enablement only.** `cloud-init` and `qemu-guest-agent` packages always install via `pacman_packages.yml`; they're harmless on bare metal (no-op without a virtio serial channel / datasource). Set `vm_services` to the standard Proxmox set (5 units) only on VM guests.
 - **Mise tool versions live in the dotfiles repo**, not here. `ansible/roles/mise/tasks/main.yml` only installs the `mise` binary; `mise install` runs from a `run_once_after_*` script in the dotfiles repo.
+- **`chezmoi update` alone does not regenerate `chezmoi.toml`.** The dotfiles repo's `.chezmoi.<format>.tmpl` is only re-rendered when `update --init` (or a fresh `init --apply`) runs. Plain `chezmoi update` does `git pull` + `apply` but leaves the existing config file untouched. `bootstrap.sh` uses `update --init` for that reason; if you ever invoke chezmoi by hand, prefer `chezmoi update --init` (or `chezmoi apply --init` after pulling) so template edits take effect.
 - **First run is not 100% Ansible-managed**: `paru` is bootstrapped by bash (no Ansible module for building it). The guard `if ! command -v paru` keeps re-runs safe.
 - **Single-machine scope is intentional.** No inventory generalization, no multi-host support — adding a second machine is explicitly out of scope per the design spec.
 - **`tests/idempotency.sh` greps the PLAY RECAP** for `changed=[1-9]`, not the task list. New roles must not produce `changed=` tasks on a steady-state re-run; if a task is inherently non-idempotent, add a `creates:`/`removes:` guard or use `changed_when: false`.

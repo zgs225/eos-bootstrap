@@ -81,8 +81,8 @@ if [[ "${DOTFILES_USE_ENCRYPTION}" == "true" ]]; then
   log "age identity present, continuing with dotfiles"
 fi
 if [[ -d "${HOME}/.local/share/chezmoi" ]]; then
-  log "Dotfiles already initialized; running chezmoi update (pull + apply)"
-  chezmoi update
+  log "Dotfiles already initialized; running chezmoi update --init (pull + regen config + apply)"
+  chezmoi update --init
 else
   if [[ -n "${DOTFILES_BRANCH}" ]]; then
     log "Initializing dotfiles from ${DOTFILES_REPO} (branch: ${DOTFILES_BRANCH})"
