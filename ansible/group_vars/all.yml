@@ -13,6 +13,7 @@ user_groups:
   - video
   - network
   - audio
+  - tty
 
 # Services to enable in addition to core_services. Empty by default.
 optional_services: []
