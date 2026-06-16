@@ -34,16 +34,61 @@
   when: i915_hw_check.rc == 0
   tags: [packages, i915-sriov]
 
-- name: Install i915-sriov-dkms via AUR
+- name: Clone i915-sriov-dkms upstream repo
   become: true
   become_user: "{{ target_user }}"
-  environment:
-    PARU: "1"
-  command:
-    cmd: "paru -S --needed --noconfirm i915-sriov-dkms"
+  ansible.builtin.git:
+    repo: https://github.com/strongtz/i915-sriov-dkms.git
+    dest: /tmp/i915-sriov-dkms
+    version: master
   when: i915_hw_check.rc == 0
+  tags: [packages, i915-sriov]
+
+- name: Read upstream PKGBUILD version
+  ansible.builtin.shell: |
+    set -o pipefail
+    source /tmp/i915-sriov-dkms/PKGBUILD && echo "${pkgver}-${pkgrel}"
+  args:
+    executable: /bin/bash
+  register: upstream_pkg_version
+  changed_when: false
+  when: i915_hw_check.rc == 0
+  tags: [packages, i915-sriov]
+
+- name: Check installed i915-sriov-dkms version
+  ansible.builtin.shell: |
+    set -o pipefail
+    pacman -Q i915-sriov-dkms 2>/dev/null | awk '{print $2}' || echo "none"
+  register: installed_pkg_version
+  changed_when: false
+  failed_when: false
+  when: i915_hw_check.rc == 0
+  tags: [packages, i915-sriov]
+
+- name: Build i915-sriov-dkms from upstream
+  become: true
+  become_user: "{{ target_user }}"
+  ansible.builtin.shell: |
+    cd /tmp/i915-sriov-dkms
+    makepkg -scf --noconfirm
+  when:
+    - i915_hw_check.rc == 0
+    - upstream_pkg_version.stdout | length > 0
+    - installed_pkg_version.stdout != upstream_pkg_version.stdout
   changed_when: false
   check_mode: false
+  tags: [packages, i915-sriov]
+
+- name: Install i915-sriov-dkms from local package
+  become: true
+  ansible.builtin.command:
+    cmd: "pacman -U --noconfirm /tmp/i915-sriov-dkms/i915-sriov-dkms-*.pkg.tar.zst"
+  when:
+    - i915_hw_check.rc == 0
+    - upstream_pkg_version.stdout | length > 0
+    - installed_pkg_version.stdout != upstream_pkg_version.stdout
+  register: pkg_installed
+  changed_when: pkg_installed.rc == 0
   notify: Regenerate initramfs
   tags: [packages, i915-sriov]
 
@@ -75,6 +120,7 @@
     cmd: dkms autoinstall i915-sriov-dkms
   when: i915_hw_check.rc == 0
   changed_when: false
+  failed_when: false
   check_mode: false
   notify: Regenerate initramfs
   tags: [packages, i915-sriov]
