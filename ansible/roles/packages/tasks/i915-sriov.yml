@@ -1,0 +1,100 @@
+---
+- name: Detect Intel GPU via lspci
+  ansible.builtin.shell: |
+    set -o pipefail
+    lspci -nn 2>/dev/null | grep -qiE '\[0300\].*8086:'
+  register: i915_hw_check
+  changed_when: false
+  failed_when: i915_hw_check.rc not in [0, 1]
+  check_mode: false
+
+- name: Install i915-sriov-dkms via AUR
+  become: true
+  become_user: "{{ target_user }}"
+  environment:
+    PARU: "1"
+  command:
+    cmd: "paru -S --needed --noconfirm i915-sriov-dkms"
+  when: i915_hw_check.rc == 0
+  changed_when: false
+  check_mode: false
+  notify: Regenerate initramfs
+  tags: [packages, i915-sriov]
+
+- name: Install VAAPI and OpenCL packages
+  when: i915_hw_check.rc == 0
+  community.general.pacman:
+    name:
+      - intel-media-driver
+      - libva-utils
+      - intel-opencl-icd
+      - clinfo
+    state: present
+  tags: [packages, i915-sriov]
+
+- name: Detect bootloader type (systemd-boot)
+  ansible.builtin.stat:
+    path: /boot/loader/entries
+  register: systemd_boot_dir
+  when: i915_hw_check.rc == 0
+
+- name: Detect bootloader type (GRUB)
+  ansible.builtin.stat:
+    path: /etc/default/grub
+  register: grub_config
+  when:
+    - i915_hw_check.rc == 0
+    - not systemd_boot_dir.stat.exists
+
+- name: Fail if no supported bootloader found
+  ansible.builtin.fail:
+    msg: >-
+      No supported bootloader detected. Please manually add kernel parameters
+      'i915.enable_guc=3 module_blacklist=xe' to your bootloader configuration.
+  when:
+    - i915_hw_check.rc == 0
+    - not systemd_boot_dir.stat.exists
+    - not grub_config.stat.exists
+
+- name: Configure kernel parameters for systemd-boot
+  when:
+    - i915_hw_check.rc == 0
+    - systemd_boot_dir.stat.exists
+  block:
+    - name: Find systemd-boot entry files
+      ansible.builtin.find:
+        paths: /boot/loader/entries
+        patterns: "*.conf"
+      register: sd_boot_entries
+
+    - name: Append kernel parameters to systemd-boot entries
+      ansible.builtin.lineinfile:
+        path: "{{ item.path }}"
+        regexp: '^(options\s+.*)$'
+        backrefs: true
+        line: '\1 i915.enable_guc=3 module_blacklist=xe'
+      when: "'i915.enable_guc=3' not in lookup('file', item.path)"
+      loop: "{{ sd_boot_entries.files }}"
+      loop_control:
+        label: "{{ item.path }}"
+      notify: Regenerate initramfs
+
+- name: Configure kernel parameters for GRUB
+  when:
+    - i915_hw_check.rc == 0
+    - not systemd_boot_dir.stat.exists
+    - grub_config.stat.exists
+  block:
+    - name: Append kernel parameters to GRUB config
+      ansible.builtin.lineinfile:
+        path: /etc/default/grub
+        regexp: '^(GRUB_CMDLINE_LINUX_DEFAULT="(.*)")$'
+        backrefs: true
+        line: 'GRUB_CMDLINE_LINUX_DEFAULT="\2 i915.enable_guc=3 module_blacklist=xe"'
+      when: "'i915.enable_guc=3' not in lookup('file', '/etc/default/grub')"
+      notify: Regenerate initramfs
+
+    - name: Regenerate GRUB config
+      ansible.builtin.command:
+        cmd: "grub-mkconfig -o /boot/grub/grub.cfg"
+      changed_when: false
