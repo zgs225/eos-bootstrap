@@ -85,10 +85,11 @@
     - grub_config.stat.exists
   block:
     - name: Append kernel parameters to GRUB config
-      ansible.builtin.replace:
+      ansible.builtin.lineinfile:
         path: /etc/default/grub
-        regexp: '^(GRUB_CMDLINE_LINUX_DEFAULT=")(.*)(".*)$'
-        replace: '\1\2 i915.enable_guc=3 module_blacklist=xe\3'
+        regexp: "^GRUB_CMDLINE_LINUX_DEFAULT='(.*)'"
+        line: "GRUB_CMDLINE_LINUX_DEFAULT='\\1 i915.enable_guc=3 module_blacklist=xe'"
+        backrefs: true
       notify: Regenerate initramfs
 
     - name: Regenerate GRUB config
