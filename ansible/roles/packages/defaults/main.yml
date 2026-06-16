@@ -83,9 +83,6 @@ pacman_packages:
   - cloud-init
   - qemu-guest-agent
   - spice-vdagent
-  # Remote desktop (RDP via xrdp + Xorg, hardware accelerated)
-  - xrdp
-  - xorgxrdp
 
 aur_packages:
   # Fonts (nerd fonts for terminal icons: powerline, symbols, file icons)

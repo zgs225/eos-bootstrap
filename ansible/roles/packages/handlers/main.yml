@@ -1,10 +1,4 @@
 ---
-- name: Restart xrdp
-  become: true
-  ansible.builtin.systemd:
-    name: xrdp.service
-    state: restarted
-
 - name: Regenerate initramfs
   become: true
   ansible.builtin.command:

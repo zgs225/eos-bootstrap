@@ -7,4 +7,3 @@ core_services:
   - docker.service
   - fstrim.timer
   - sshd.service
-  - xrdp.service
