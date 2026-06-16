@@ -1,0 +1,46 @@
+---
+- name: Detect Intel GPU via lspci
+  ansible.builtin.shell: |
+    set -o pipefail
+    lspci -nn 2>/dev/null | grep -qiE '\[0300\].*8086:'
+  register: sunshine_intel_check
+  changed_when: false
+  failed_when: sunshine_intel_check.rc not in [0, 1]
+  check_mode: false
+
+- name: Deploy LizardByte pacman repo config
+  ansible.builtin.copy:
+    dest: /etc/pacman.d/lizardbyte.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [lizardbyte]
+      SigLevel = Optional
+      Server = https://github.com/LizardByte/pacman-repo/releases/latest/download
+  when: sunshine_intel_check.rc == 0
+  tags: [packages, sunshine]
+
+- name: Add LizardByte repo include to pacman.conf
+  ansible.builtin.lineinfile:
+    path: /etc/pacman.conf
+    regexp: '^\s*Include\s*=\s*/etc/pacman\.d/lizardbyte\.conf'
+    line: Include = /etc/pacman.d/lizardbyte.conf
+    state: present
+  when: sunshine_intel_check.rc == 0
+  tags: [packages, sunshine]
+
+- name: Update pacman cache after adding LizardByte repo
+  community.general.pacman:
+    update_cache: true
+    name: []
+  when: sunshine_intel_check.rc == 0
+  tags: [packages, sunshine]
+
+- name: Install sunshine from LizardByte repo
+  ansible.builtin.command:
+    cmd: pacman -S --needed --noconfirm sunshine
+  when: sunshine_intel_check.rc == 0
+  changed_when: false
+  check_mode: false
+  tags: [packages, sunshine]
