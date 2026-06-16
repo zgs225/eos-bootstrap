@@ -1,0 +1,10 @@
+---
+- name: Deploy sesman.ini
+  ansible.builtin.template:
+    src: sesman.ini.j2
+    dest: /etc/xrdp/sesman.ini
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart xrdp
+  tags: [packages, xrdp]

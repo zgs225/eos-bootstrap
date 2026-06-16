@@ -15,3 +15,7 @@
   ansible.builtin.include_tasks: cloud_init.yml
   when: vm_services | length > 0
   tags: [packages, cloud-init]
+
+- name: Configure xrdp
+  ansible.builtin.include_tasks: xrdp.yml
+  tags: [packages, xrdp]
