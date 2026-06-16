@@ -73,7 +73,6 @@
         regexp: '^(options\s+.*)$'
         backrefs: true
         line: '\1 i915.enable_guc=3 module_blacklist=xe'
-      when: "'i915.enable_guc=3' not in lookup('file', item.path)"
       loop: "{{ sd_boot_entries.files }}"
       loop_control:
         label: "{{ item.path }}"
@@ -86,12 +85,10 @@
     - grub_config.stat.exists
   block:
     - name: Append kernel parameters to GRUB config
-      ansible.builtin.lineinfile:
+      ansible.builtin.replace:
         path: /etc/default/grub
-        regexp: '^(GRUB_CMDLINE_LINUX_DEFAULT="(.*)")$'
-        backrefs: true
-        line: 'GRUB_CMDLINE_LINUX_DEFAULT="\2 i915.enable_guc=3 module_blacklist=xe"'
-      when: "'i915.enable_guc=3' not in lookup('file', '/etc/default/grub')"
+        regexp: '^(GRUB_CMDLINE_LINUX_DEFAULT=")(.*)(".*)$'
+        replace: '\1\2 i915.enable_guc=3 module_blacklist=xe\3'
       notify: Regenerate initramfs
 
     - name: Regenerate GRUB config
