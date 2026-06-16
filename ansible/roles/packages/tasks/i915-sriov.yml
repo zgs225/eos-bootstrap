@@ -27,7 +27,7 @@
     name:
       - intel-media-driver
       - libva-utils
-      - intel-opencl-icd
+      - intel-compute-runtime
       - clinfo
     state: present
   tags: [packages, i915-sriov]
