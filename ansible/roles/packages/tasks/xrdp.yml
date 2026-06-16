@@ -1,4 +1,12 @@
 ---
+- name: Ensure xrdp config directory exists
+  ansible.builtin.file:
+    path: /etc/xrdp
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
 - name: Deploy sesman.ini
   ansible.builtin.template:
     src: sesman.ini.j2
