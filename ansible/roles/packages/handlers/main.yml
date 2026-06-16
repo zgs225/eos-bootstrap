@@ -4,3 +4,9 @@
   ansible.builtin.systemd:
     name: xrdp.service
     state: restarted
+
+- name: Regenerate initramfs
+  become: true
+  ansible.builtin.command:
+    cmd: "mkinitcpio -P"
+  changed_when: false
