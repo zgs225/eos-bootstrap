@@ -2,34 +2,36 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add xrdp + Xvnc support for independent RDP remote desktop sessions on the EndeavourOS workstation.
+**Goal:** Add xrdp + Xorg support for independent RDP remote desktop sessions with hardware acceleration on the EndeavourOS workstation.
 
-**Architecture:** xrdp listens on 3389, sesman forks Xvnc per connection, i3wm runs inside each session. PAM authenticates users. Configuration is deployed via Ansible template.
+**Architecture:** xrdp listens on 3389, sesman forks Xorg per connection, i3wm runs inside each session. PAM authenticates users. Xorg backend provides GPU acceleration for wezterm and other hardware-accelerated apps.
 
-**Tech Stack:** xrdp, tigervnc (Xvnc), Ansible, systemd
+**Tech Stack:** xrdp, xorgxrdp, Ansible, systemd
 
 ---
 
-### Task 1: Add xrdp and tigervnc to pacman packages
+### Task 1: Update packages (Xvnc → Xorg)
 
 **Files:**
 - Modify: `ansible/roles/packages/defaults/main.yml`
 
-- [ ] **Step 1: Add packages to the list**
+- [ ] **Step 1: Replace tigervnc with xorgxrdp**
 
-Add `xrdp` and `tigervnc` to `pacman_packages` in `ansible/roles/packages/defaults/main.yml`, in a new `# Remote desktop` comment section after the Cloud / VM guests block (after line 84):
+In `ansible/roles/packages/defaults/main.yml`, change the remote desktop section:
 
 ```yaml
-  # Remote desktop (RDP via xrdp + Xvnc)
+  # Remote desktop (RDP via xrdp + Xorg, hardware accelerated)
   - xrdp
-  - tigervnc
+  - xorgxrdp
 ```
+
+This replaces `tigervnc` with `xorgxrdp`.
 
 - [ ] **Step 2: Commit**
 
 ```bash
 git add ansible/roles/packages/defaults/main.yml
-git commit -m "feat(packages): add xrdp and tigervnc for RDP remote desktop"
+git commit -m "feat(packages): replace tigervnc with xorgxrdp for hardware-accelerated RDP"
 ```
 
 ---
@@ -61,115 +63,39 @@ git commit -m "feat(services): enable xrdp.service as core service"
 
 ---
 
-### Task 3: Create xrdp configuration task and template
+### Task 3: Update xrdp configuration (Xvnc → Xorg)
 
 **Files:**
-- Create: `ansible/roles/packages/tasks/xrdp.yml`
-- Create: `ansible/roles/packages/templates/sesman.ini.j2`
-- Create: `ansible/roles/packages/handlers/main.yml`
-- Modify: `ansible/roles/packages/tasks/main.yml`
+- Modify: `ansible/roles/packages/tasks/xrdp.yml`
+- Modify: `ansible/roles/packages/templates/sesman.ini.j2`
 
-We deploy the full `sesman.ini` as a template — the same pattern used by `sysctl.d.conf.j2` in the kernel role. The only change from the upstream default is adding `-securitytypes None` to the `[Xvnc]` param list so the VNC layer does not prompt for a separate password (xrdp already authenticates via PAM). Ansible is the source of truth for system config.
+We deploy the full `sesman.ini` as a template with the `[Xorg]` section configured. The `[Xvnc]` section is removed (not needed for Xorg backend).
 
-- [ ] **Step 1: Create sesman.ini.j2 template**
+- [ ] **Step 1: Update sesman.ini.j2 template**
 
-Create `ansible/roles/packages/templates/sesman.ini.j2`:
+Replace the `[Xvnc]` section with `[Xorg]` section in `ansible/roles/packages/templates/sesman.ini.j2`:
 
 ```ini
-;; Managed by Ansible — do not edit by hand.
-;; See `man 5 sesman.ini` for details.
-
-[Globals]
-ListenAddress=127.0.0.1
-ListenPort=3350
-EnableUserWindowManager=true
-UserWindowManager=startwm.sh
-DefaultWindowManager=startwm.sh
-ReconnectScript=
-
-[Logging]
-LogFile=/var/log/xrdp-sesman.log
-LogLevel=INFO
-EnableSyslog=true
-SyslogLevel=INFO
-
-[Sessions]
-X11DisplayOffset=10
-MaxSessions=10
-KillDisconnected=false
-DisconnectedTimeLimit=0
-IdleTimeLimit=0
-Policy=Default
-
-[Security]
-AllowRootLogin=false
-MaxLoginRetry=4
-AlwaysGroupCheck=false
-
-[Chansrv]
-FuseMountName=thinclient_drives
-
-[SessionVariables]
-
-[Xvnc]
-param=Xvnc
-param=-bs
+[Xorg]
+param=/usr/lib/Xorg
+param=-config
+param=xrdp/xorg.conf
+param=-noreset
 param=-nolisten
 param=tcp
-param=-localhost
-param=-dpi
-param=96
-param=-securitytypes
-param=None
 ```
 
-- [ ] **Step 2: Create xrdp task file**
+Remove the entire `[Xvnc]` section (no longer needed).
 
-Create `ansible/roles/packages/tasks/xrdp.yml`:
+- [ ] **Step 2: Update xrdp task if needed**
 
-```yaml
----
-- name: Deploy sesman.ini
-  ansible.builtin.template:
-    src: sesman.ini.j2
-    dest: /etc/xrdp/sesman.ini
-    owner: root
-    group: root
-    mode: "0644"
-  notify: Restart xrdp
-  tags: [packages, xrdp]
-```
+The existing task file should work as-is (it just deploys the template). No changes needed.
 
-- [ ] **Step 3: Create handlers file**
-
-Create `ansible/roles/packages/handlers/main.yml`:
-
-```yaml
----
-- name: Restart xrdp
-  ansible.builtin.systemd:
-    name: xrdp.service
-    state: restarted
-```
-
-- [ ] **Step 4: Include xrdp task from main.yml**
-
-Add the xrdp task include to `ansible/roles/packages/tasks/main.yml` after the cloud_init include:
-
-```yaml
-- name: Configure xrdp
-  ansible.builtin.include_tasks: xrdp.yml
-  tags: [packages, xrdp]
-```
-
-- [ ] **Step 5: Commit**
+- [ ] **Step 3: Commit**
 
 ```bash
-git add ansible/roles/packages/tasks/xrdp.yml \
-        ansible/roles/packages/templates/sesman.ini.j2 \
-        ansible/roles/packages/handlers/main.yml \
-        ansible/roles/packages/tasks/main.yml
-git commit -m "feat(packages): add xrdp configuration task, template, and handler"
+git add ansible/roles/packages/templates/sesman.ini.j2
+git commit -m "feat(xrdp): switch from Xvnc to Xorg backend for hardware acceleration"
 ```
 
 ---
