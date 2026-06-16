@@ -33,13 +33,10 @@ FuseMountName=thinclient_drives
 
 [SessionVariables]
 
-[Xvnc]
-param=Xvnc
-param=-bs
+[Xorg]
+param=/usr/lib/Xorg
+param=-config
+param=xrdp/xorg.conf
+param=-noreset
 param=-nolisten
 param=tcp
-param=-localhost
-param=-dpi
-param=96
-param=-securitytypes
-param=None
