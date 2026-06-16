@@ -53,6 +53,7 @@ pacman_packages:
   - git
   - base-devel
   - linux-headers
+  - mkinitcpio
   - openssh
   - rsync
   - ripgrep

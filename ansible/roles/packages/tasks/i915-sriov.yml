@@ -8,6 +8,32 @@
   failed_when: i915_hw_check.rc not in [0, 1]
   check_mode: false
 
+- name: Add i915 to empty MODULES in mkinitcpio.conf
+  ansible.builtin.lineinfile:
+    path: /etc/mkinitcpio.conf
+    regexp: '^MODULES=\(\)$'
+    line: 'MODULES=(i915)'
+  when: i915_hw_check.rc == 0
+  tags: [packages, i915-sriov]
+
+- name: Append i915 to existing MODULES in mkinitcpio.conf
+  ansible.builtin.lineinfile:
+    path: /etc/mkinitcpio.conf
+    regexp: '^MODULES=\((?!.*\bi915\b)(.*)\)$'
+    backrefs: true
+    line: 'MODULES=(\1 i915)'
+  when: i915_hw_check.rc == 0
+  tags: [packages, i915-sriov]
+
+- name: Ensure kms hook is present in mkinitcpio.conf
+  ansible.builtin.lineinfile:
+    path: /etc/mkinitcpio.conf
+    regexp: '^HOOKS=\((.*\bmodconf)(?!.*\bkms\b)(.*)\)$'
+    backrefs: true
+    line: 'HOOKS=(\1 kms\2)'
+  when: i915_hw_check.rc == 0
+  tags: [packages, i915-sriov]
+
 - name: Install i915-sriov-dkms via AUR
   become: true
   become_user: "{{ target_user }}"
@@ -19,6 +45,60 @@
   changed_when: false
   check_mode: false
   notify: Regenerate initramfs
+  tags: [packages, i915-sriov]
+
+- name: Verify DKMS module installed for current kernel
+  ansible.builtin.shell: |
+    set -o pipefail
+    dkms status 2>/dev/null | grep -q 'i915-sriov-dkms.*: installed'
+  register: dkms_verify
+  changed_when: false
+  when: i915_hw_check.rc == 0
+  tags: [packages, i915-sriov]
+
+- name: Fail if DKMS module not installed
+  ansible.builtin.fail:
+    msg: >-
+      i915-sriov-dkms DKMS module is not installed for the current kernel.
+      Check 'dkms status' and kernel headers ('linux-headers').
+  when:
+    - i915_hw_check.rc == 0
+    - dkms_verify.rc != 0
+  tags: [packages, i915-sriov]
+
+- name: Force initramfs rebuild now to verify
+  ansible.builtin.meta: flush_handlers
+  when: i915_hw_check.rc == 0
+  tags: [packages, i915-sriov]
+
+- name: Find initramfs image
+  ansible.builtin.shell: |
+    set -o pipefail
+    ls /boot/initramfs-linux*.img 2>/dev/null | head -1
+  register: initramfs_path
+  changed_when: false
+  when: i915_hw_check.rc == 0
+  tags: [packages, i915-sriov]
+
+- name: Verify patched i915 module in initramfs
+  ansible.builtin.command:
+    cmd: "lsinitcpio {{ initramfs_path.stdout }}"
+  register: initramfs_content
+  changed_when: false
+  when:
+    - i915_hw_check.rc == 0
+    - initramfs_path.stdout | length > 0
+  tags: [packages, i915-sriov]
+
+- name: Assert DKMS i915 module is in initramfs
+  ansible.builtin.assert:
+    that: "'updates/dkms/i915.ko' in initramfs_content.stdout"
+    fail_msg: >-
+      Patched i915 module not found in initramfs. DKMS may have failed to build.
+      Check 'dkms status' and 'journalctl -u dkms'.
+  when:
+    - i915_hw_check.rc == 0
+    - initramfs_path.stdout | length > 0
   tags: [packages, i915-sriov]
 
 - name: Install VAAPI and OpenCL packages
