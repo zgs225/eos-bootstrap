@@ -97,6 +97,7 @@
     cmd: "pacman -U --noconfirm {{ pkg_file.stdout }}"
   when:
     - i915_hw_check.rc == 0
+    - pkg_file is not skipped
     - pkg_file.stdout | length > 0
   register: pkg_installed
   changed_when: pkg_installed.rc == 0
