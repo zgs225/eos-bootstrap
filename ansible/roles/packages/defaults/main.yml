@@ -79,6 +79,7 @@ pacman_packages:
   # `vm_services` in group_vars/all.yml.
   - cloud-init
   - qemu-guest-agent
+  - spice-vdagent
 
 aur_packages:
   # Fonts (nerd fonts for terminal icons: powerline, symbols, file icons)
