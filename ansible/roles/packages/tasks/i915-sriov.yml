@@ -79,14 +79,25 @@
   check_mode: false
   tags: [packages, i915-sriov]
 
-- name: Install i915-sriov-dkms from local package
-  become: true
-  ansible.builtin.command:
-    cmd: "pacman -U --noconfirm /tmp/i915-sriov-dkms/i915-sriov-dkms-*.pkg.tar.zst"
+- name: Find built i915-sriov-dkms package
+  ansible.builtin.shell: |
+    set -o pipefail
+    ls /tmp/i915-sriov-dkms/i915-sriov-dkms-*.pkg.tar.zst
+  register: pkg_file
+  changed_when: false
   when:
     - i915_hw_check.rc == 0
     - upstream_pkg_version.stdout | length > 0
     - installed_pkg_version.stdout != upstream_pkg_version.stdout
+  tags: [packages, i915-sriov]
+
+- name: Install i915-sriov-dkms from local package
+  become: true
+  ansible.builtin.command:
+    cmd: "pacman -U --noconfirm {{ pkg_file.stdout }}"
+  when:
+    - i915_hw_check.rc == 0
+    - pkg_file.stdout | length > 0
   register: pkg_installed
   changed_when: pkg_installed.rc == 0
   notify: Regenerate initramfs
