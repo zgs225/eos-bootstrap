@@ -69,6 +69,16 @@
     - kernel_headers_match.rc | default(0) != 0
   tags: [packages, i915-sriov]
 
+- name: Build DKMS module for current kernel
+  become: true
+  ansible.builtin.command:
+    cmd: dkms autoinstall i915-sriov-dkms
+  when: i915_hw_check.rc == 0
+  changed_when: false
+  check_mode: false
+  notify: Regenerate initramfs
+  tags: [packages, i915-sriov]
+
 - name: Verify DKMS module installed for current kernel
   ansible.builtin.shell: |
     set -o pipefail
