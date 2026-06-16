@@ -19,3 +19,7 @@
 - name: Conditionally install i915-sriov driver
   ansible.builtin.include_tasks: i915-sriov.yml
   tags: [packages, i915-sriov]
+
+- name: Conditionally install Sunshine for remote desktop
+  ansible.builtin.include_tasks: sunshine.yml
+  tags: [packages, sunshine]
