@@ -23,10 +23,17 @@ optional_services: []
 # cloud-init and qemu-guest-agent systemd services are enabled and started.
 # The packages (cloud-init, qemu-guest-agent) are always installed via
 # pacman_packages.yml regardless of this setting.
-vm_services: []
+vm_services:
+  - cloud-init-local.service
+  - cloud-init-main.service
+  - cloud-init-network.service
+  - cloud-config.service
+  - cloud-final.service
+  - qemu-guest-agent.service
 # Common examples for a Proxmox/QEMU guest:
 #   - cloud-init-local.service
-#   - cloud-init.service
+#   - cloud-init-main.service
+#   - cloud-init-network.service
 #   - cloud-config.service
 #   - cloud-final.service
 #   - qemu-guest-agent.service
