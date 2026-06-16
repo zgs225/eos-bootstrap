@@ -24,6 +24,7 @@ pacman_packages:
   # Xorg / X11 (startx + i3 — no display manager)
   - xorg-server
   - xorg-xinit
+  - xclip
   # i3wm ecosystem
   - i3-wm
   - i3status
@@ -64,6 +65,7 @@ pacman_packages:
   - zsh-syntax-highlighting
   # Editors
   - neovim
+  - tree-sitter-cli
   # Terminal
   - wezterm
   - tmux
