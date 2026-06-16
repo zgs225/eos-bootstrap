@@ -47,12 +47,35 @@
   notify: Regenerate initramfs
   tags: [packages, i915-sriov]
 
+- name: Check kernel and headers version match
+  ansible.builtin.shell: |
+    set -o pipefail
+    test "$(pacman -Q linux 2>/dev/null | awk '{print $2}')" = "$(pacman -Q linux-headers 2>/dev/null | awk '{print $2}')"
+  register: kernel_headers_match
+  changed_when: false
+  failed_when: false
+  when: i915_hw_check.rc == 0
+  tags: [packages, i915-sriov]
+
+- name: Fail on kernel/headers version mismatch
+  ansible.builtin.fail:
+    msg: >-
+      Kernel (linux) and linux-headers versions do not match.
+      DKMS cannot build modules with mismatched headers.
+      Reboot into the installed kernel or install matching headers
+      with: pacman -Syu linux linux-headers
+  when:
+    - i915_hw_check.rc == 0
+    - kernel_headers_match.rc | default(0) != 0
+  tags: [packages, i915-sriov]
+
 - name: Verify DKMS module installed for current kernel
   ansible.builtin.shell: |
     set -o pipefail
     dkms status 2>/dev/null | grep -q 'i915-sriov-dkms.*: installed'
   register: dkms_verify
   changed_when: false
+  failed_when: false
   when: i915_hw_check.rc == 0
   tags: [packages, i915-sriov]
 
