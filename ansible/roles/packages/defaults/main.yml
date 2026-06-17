@@ -18,6 +18,8 @@ pacman_packages:
   - zip
   - tree
   - htop
+  - lsof
+  - btop
   # Networking
   - networkmanager
   - nm-connection-editor
@@ -89,4 +91,4 @@ aur_packages:
   # Fonts (nerd fonts for terminal icons: powerline, symbols, file icons)
   - nerd-fonts
   # Add more AUR packages here, e.g.:
-  # - google-chrome
+  - google-chrome
