@@ -92,3 +92,5 @@ aur_packages:
   - nerd-fonts
   # Add more AUR packages here, e.g.:
   - google-chrome
+  - opencode
+  - cc-switch
