@@ -16,12 +16,16 @@ pacman_packages:
   - jq
   - unzip
   - zip
+  - p7zip
+  - poppler
+  - ffmpeg
   - tree
   - htop
   - lsof
   - btop
   # Networking
   - networkmanager
+  - network-manager-applet
   - nm-connection-editor
   # Xorg / X11 (startx + i3 — no display manager)
   - xorg-server
@@ -42,6 +46,8 @@ pacman_packages:
   - gtk3
   - gtk4
   - papirus-icon-theme
+  - resvg
+  - imagemagick
   - noto-fonts-cjk
   - noto-fonts-emoji
   - ttf-dejavu
@@ -54,6 +60,9 @@ pacman_packages:
   # Development
   - git
   - base-devel
+  - ansible-lint
+  - yamllint
+  - python-yaml
   - linux-headers
   - mkinitcpio
   - openssh
@@ -63,6 +72,8 @@ pacman_packages:
   - fzf
   - bat
   - eza
+  - yazi
+  - zoxide
   # Shell
   - zsh
   - zsh-completions
