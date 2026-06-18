@@ -1,4 +1,15 @@
 ---
+- name: Remove getty autologin override (disabled)
+  when: not (display_autologin_enabled | default(true))
+  vars:
+    unit_dir: "/etc/systemd/system/getty@{{ display_autologin_tty }}.service.d"
+  ansible.builtin.file:
+    path: "{{ unit_dir }}"
+    state: absent
+  notify: Reload systemd
+  tags: [display, autologin]
+
 - name: Configure getty autologin
+  when: display_autologin_enabled | default(true)
   ansible.builtin.include_tasks: autologin.yml
   tags: [display, autologin]

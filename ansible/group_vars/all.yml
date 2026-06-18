@@ -50,6 +50,11 @@ dotfiles_branch: "master"
 # ~/.config/chezmoi/key.txt (or $AGE_KEY_FILE).
 dotfiles_use_encryption: true
 
+# tty1 autologin → startx → i3 chain.
+# Set to false when using xrdp as the primary (or only) graphical session
+# to avoid fcitx5 display conflicts and an unnecessary local session.
+display_autologin_enabled: false
+
 # xrdp remote desktop (xorgxrdp backend, i3 session).
 # Set to true to install and enable xrdp + xrdp-sesman.
 # Packages (xrdp, xorgxrdp) are always installed from AUR; service
