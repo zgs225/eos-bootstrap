@@ -93,7 +93,6 @@ aur_packages:
   # Add more AUR packages here, e.g.:
   - google-chrome
   - opencode
-  - cc-switch
   # xrdp remote desktop (xorgxrdp backend)
   - xrdp
   - xorgxrdp
