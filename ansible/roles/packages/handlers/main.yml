@@ -4,3 +4,12 @@
   ansible.builtin.command:
     cmd: "mkinitcpio -P"
   changed_when: false
+
+- name: Restart xrdp
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: restarted
+  loop:
+    - xrdp.service
+    - xrdp-sesman.service

@@ -49,3 +49,9 @@ dotfiles_branch: "master"
 # bootstrap.sh will refuse to run unless an age identity is present at
 # ~/.config/chezmoi/key.txt (or $AGE_KEY_FILE).
 dotfiles_use_encryption: true
+
+# xrdp remote desktop (xorgxrdp backend, i3 session).
+# Set to true to install and enable xrdp + xrdp-sesman.
+# Packages (xrdp, xorgxrdp) are always installed from AUR; service
+# enablement is gated by this flag.
+xrdp_enabled: false

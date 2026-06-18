@@ -94,3 +94,6 @@ aur_packages:
   - google-chrome
   - opencode
   - cc-switch
+  # xrdp remote desktop (xorgxrdp backend)
+  - xrdp
+  - xorgxrdp
