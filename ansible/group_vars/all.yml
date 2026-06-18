@@ -54,4 +54,4 @@ dotfiles_use_encryption: true
 # Set to true to install and enable xrdp + xrdp-sesman.
 # Packages (xrdp, xorgxrdp) are always installed from AUR; service
 # enablement is gated by this flag.
-xrdp_enabled: false
+xrdp_enabled: true
