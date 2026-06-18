@@ -11,7 +11,51 @@
     - { src: xrdp.ini.j2, dest: /etc/xrdp/xrdp.ini, mode: "0644" }
     - { src: sesman.ini.j2, dest: /etc/xrdp/sesman.ini, mode: "0644" }
     - { src: startwm.sh.j2, dest: /etc/xrdp/startwm.sh, mode: "0755" }
+    - { src: Xwrapper.config.j2, dest: /etc/X11/Xwrapper.config, mode: "0644" }
   notify: Restart xrdp
+  tags: [xrdp]
+
+- name: Create xrdp.service systemd override directory
+  become: true
+  ansible.builtin.file:
+    path: /etc/systemd/system/xrdp.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  tags: [xrdp]
+
+- name: Deploy xrdp restart-on-failure override
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/xrdp.service.d/restart.conf
+    content: |
+      [Service]
+      Restart=on-failure
+      RestartSec=5
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart xrdp
+  tags: [xrdp]
+
+- name: Create tsusers group for xrdp session access control
+  become: true
+  ansible.builtin.group:
+    name: tsusers
+    state: present
+  tags: [xrdp]
+
+- name: Add target_user to tsusers group
+  become: true
+  ansible.builtin.user:
+    name: "{{ target_user }}"
+    groups:
+      - tsusers
+    append: true
+  tags: [xrdp]
 
 - name: Enable and start xrdp services
   become: true
@@ -22,3 +66,4 @@
   loop:
     - xrdp.service
     - xrdp-sesman.service
+  tags: [xrdp]

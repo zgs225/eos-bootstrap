@@ -5,6 +5,11 @@
     cmd: "mkinitcpio -P"
   changed_when: false
 
+- name: Reload systemd
+  become: true
+  ansible.builtin.systemd:
+    daemon_reload: true
+
 - name: Restart xrdp
   become: true
   ansible.builtin.systemd:
