@@ -13,6 +13,24 @@ export XDG_CURRENT_DESKTOP=i3
 export XDG_SESSION_TYPE=x11
 export XRDP_SESSION=1
 
+# HiDPI DPI scaling for high-resolution RDP sessions (e.g. Retina displays).
+# Auto-detects from xrandr, scaling proportionally from 1920px=96DPI.
+# Override by setting XRDP_DPI env var (e.g. in ~/.xprofile).
+if command -v xrandr >/dev/null 2>&1; then
+    RESOLUTION=$(xrandr 2>/dev/null | grep '*' | head -1 | awk '{print $1}')
+    WIDTH=$(echo "$RESOLUTION" | cut -d'x' -f1)
+    if [ -n "$WIDTH" ] && [ "$WIDTH" -gt 0 ]; then
+        DPI=${XRDP_DPI:-$(( WIDTH * 96 / 1920 ))}
+        if [ "$DPI" -gt 96 ]; then
+            xrandr --dpi "$DPI" 2>/dev/null || true
+            export GDK_DPI_SCALE="$DPI"
+            QT_SCALE_FACTOR=$(awk "BEGIN {printf \"%.1f\", $DPI/96}")
+            export QT_SCALE_FACTOR
+            export QT_AUTO_SCREEN_SCALE_FACTOR=0
+        fi
+    fi
+fi
+
 # Use zsh login shell so .zprofile and .zshrc (mise, PATH, etc.) are
 # loaded before exec i3. Terminals opened from i3 (Mod+Enter) inherit
 # the full environment.
