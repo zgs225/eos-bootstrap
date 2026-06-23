@@ -108,6 +108,36 @@
     XDG_RUNTIME_DIR: "/run/user/{{ _uid }}"
   tags: [xrdp]
 
+- name: Ensure default.target.wants directory exists
+  become: true
+  become_user: "{{ target_user }}"
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.config/systemd/user/default.target.wants"
+    state: directory
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: "0755"
+  tags: [xrdp]
+
+- name: Link x0vncserver to default.target.wants
+  become: true
+  become_user: "{{ target_user }}"
+  ansible.builtin.file:
+    src: "/home/{{ target_user }}/.config/systemd/user/x0vncserver.service"
+    dest: "/home/{{ target_user }}/.config/systemd/user/default.target.wants/x0vncserver.service"
+    state: link
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+  tags: [xrdp]
+
+- name: Remove old graphical-session.target symlink
+  become: true
+  become_user: "{{ target_user }}"
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.config/systemd/user/graphical-session.target.wants/x0vncserver.service"
+    state: absent
+  tags: [xrdp]
+
 - name: Start x0vncserver user service (best-effort)
   become: true
   become_user: "{{ target_user }}"
