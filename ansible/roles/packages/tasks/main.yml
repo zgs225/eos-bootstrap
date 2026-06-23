@@ -23,8 +23,3 @@
 - name: Conditionally install Sunshine for remote desktop
   ansible.builtin.include_tasks: sunshine.yml
   tags: [packages, sunshine]
-
-- name: Configure xrdp when xrdp_enabled is true
-  ansible.builtin.include_tasks: xrdp.yml
-  when: xrdp_enabled | default(false) | bool
-  tags: [packages, xrdp]
