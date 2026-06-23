@@ -20,7 +20,7 @@
   become: true
   become_user: "{{ target_user }}"
   vars:
-    _uid: "{{ ansible_getent_passwd[target_user][2] | int }}"
+    _uid: "{{ lookup('pipe', 'id -u ' + target_user) | trim | int }}"
   ansible.builtin.systemd:
     scope: user
     daemon_reload: true
@@ -35,7 +35,7 @@
   become: true
   become_user: "{{ target_user }}"
   vars:
-    _uid: "{{ ansible_getent_passwd[target_user][2] | int }}"
+    _uid: "{{ lookup('pipe', 'id -u ' + target_user) | trim | int }}"
   ansible.builtin.systemd:
     name: x0vncserver.service
     scope: user
