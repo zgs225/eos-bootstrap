@@ -1,5 +1,5 @@
 # {{ ansible_managed }}
-# xrdp main configuration — port, security, backend definitions.
+# xrdp main configuration — port, security, VNC backend to x0vncserver on :0.
 
 [Globals]
 ini_version=1
@@ -48,10 +48,10 @@ rail=true
 xrdpvr=true
 tcutils=true
 
-[Xorg]
-name=Xorg
-lib=libxup.so
-username=ask
+[VNC]
+name=VNC
+lib=libvnc.so
+ip=127.0.0.1
+port=5900
+username=na
 password=ask
-port=-1
-code=20
