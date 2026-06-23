@@ -13,8 +13,36 @@
 - name: Restart xrdp
   become: true
   ansible.builtin.systemd:
-    name: "{{ item }}"
+    name: xrdp.service
     state: restarted
-  loop:
-    - xrdp.service
-    - xrdp-sesman.service
+
+- name: Reload user systemd
+  become: true
+  become_user: "{{ target_user }}"
+  vars:
+    _uid: "{{ ansible_facts.getent_passwd[target_user][1] | int }}"
+  ansible.builtin.systemd:
+    scope: user
+    daemon_reload: true
+  register: _user_reload
+  failed_when: false
+  changed_when: _user_reload.rc == 0
+  check_mode: false
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ _uid }}"
+
+- name: Restart x0vncserver
+  become: true
+  become_user: "{{ target_user }}"
+  vars:
+    _uid: "{{ ansible_facts.getent_passwd[target_user][1] | int }}"
+  ansible.builtin.systemd:
+    name: x0vncserver.service
+    scope: user
+    state: restarted
+  register: _x0vnc_restart
+  failed_when: false
+  changed_when: _x0vnc_restart.rc == 0
+  check_mode: false
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ _uid }}"
