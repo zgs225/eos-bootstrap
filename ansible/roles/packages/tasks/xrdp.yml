@@ -1,17 +1,12 @@
 ---
-- name: Deploy xrdp configuration templates
+- name: Deploy xrdp.ini with VNC backend
   become: true
   ansible.builtin.template:
-    src: "{{ item.src }}"
-    dest: "{{ item.dest }}"
+    src: xrdp.ini.j2
+    dest: /etc/xrdp/xrdp.ini
     owner: root
     group: root
-    mode: "{{ item.mode }}"
-  loop:
-    - { src: xrdp.ini.j2, dest: /etc/xrdp/xrdp.ini, mode: "0644" }
-    - { src: sesman.ini.j2, dest: /etc/xrdp/sesman.ini, mode: "0644" }
-    - { src: startwm.sh.j2, dest: /etc/xrdp/startwm.sh, mode: "0755" }
-    - { src: Xwrapper.config.j2, dest: /etc/X11/Xwrapper.config, mode: "0644" }
+    mode: "0644"
   notify: Restart xrdp
   tags: [xrdp]
 
@@ -41,29 +36,90 @@
     - Restart xrdp
   tags: [xrdp]
 
-- name: Create tsusers group for xrdp session access control
+- name: Deploy xrdp unbind-sesman override
   become: true
-  ansible.builtin.group:
-    name: tsusers
-    state: present
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/xrdp.service.d/unbind-sesman.conf
+    content: |
+      [Unit]
+      BindsTo=
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart xrdp
   tags: [xrdp]
 
-- name: Add target_user to tsusers group
-  become: true
-  ansible.builtin.user:
-    name: "{{ target_user }}"
-    groups:
-      - tsusers
-    append: true
-  tags: [xrdp]
-
-- name: Enable and start xrdp services
+- name: Enable and start xrdp.service
   become: true
   ansible.builtin.systemd:
-    name: "{{ item }}"
+    name: xrdp.service
     enabled: true
     state: started
-  loop:
-    - xrdp.service
-    - xrdp-sesman.service
+    daemon_reload: true
+  tags: [xrdp]
+
+- name: Disable and stop xrdp-sesman.service
+  become: true
+  ansible.builtin.systemd:
+    name: xrdp-sesman.service
+    enabled: false
+    state: stopped
+  tags: [xrdp]
+
+- name: Create target_user systemd user directory
+  become: true
+  become_user: "{{ target_user }}"
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.config/systemd/user"
+    state: directory
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: "0755"
+  tags: [xrdp]
+
+- name: Deploy x0vncserver user service
+  become: true
+  become_user: "{{ target_user }}"
+  ansible.builtin.template:
+    src: x0vncserver.service.j2
+    dest: "/home/{{ target_user }}/.config/systemd/user/x0vncserver.service"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: "0644"
+  notify:
+    - Reload user systemd
+    - Restart x0vncserver
+  tags: [xrdp]
+
+- name: Enable x0vncserver user service
+  become: true
+  become_user: "{{ target_user }}"
+  vars:
+    _uid: "{{ ansible_facts.getent_passwd[target_user][1] | int }}"
+  ansible.builtin.systemd:
+    name: x0vncserver.service
+    enabled: true
+    scope: user
+    daemon_reload: true
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ _uid }}"
+  tags: [xrdp]
+
+- name: Start x0vncserver user service (best-effort)
+  become: true
+  become_user: "{{ target_user }}"
+  vars:
+    _uid: "{{ ansible_facts.getent_passwd[target_user][1] | int }}"
+  ansible.builtin.systemd:
+    name: x0vncserver.service
+    state: started
+    scope: user
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ _uid }}"
+  register: _x0vnc_start
+  failed_when: false
+  changed_when: _x0vnc_start.rc == 0
+  check_mode: false
   tags: [xrdp]
