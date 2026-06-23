@@ -24,9 +24,9 @@
   ansible.builtin.systemd:
     scope: user
     daemon_reload: true
-  register: _user_reload
+  register: packages_user_reload
   failed_when: false
-  changed_when: _user_reload.rc == 0
+  changed_when: packages_user_reload.rc == 0
   check_mode: false
   environment:
     XDG_RUNTIME_DIR: "/run/user/{{ _uid }}"
@@ -40,9 +40,9 @@
     name: x0vncserver.service
     scope: user
     state: restarted
-  register: _x0vnc_restart
+  register: packages_x0vnc_restart
   failed_when: false
-  changed_when: _x0vnc_restart.rc == 0
+  changed_when: packages_x0vnc_restart.rc == 0
   check_mode: false
   environment:
     XDG_RUNTIME_DIR: "/run/user/{{ _uid }}"

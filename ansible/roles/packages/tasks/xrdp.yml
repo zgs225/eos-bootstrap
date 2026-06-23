@@ -118,8 +118,8 @@
     scope: user
   environment:
     XDG_RUNTIME_DIR: "/run/user/{{ _uid }}"
-  register: _x0vnc_start
+  register: packages_x0vnc_start
   failed_when: false
-  changed_when: _x0vnc_start.rc == 0
+  changed_when: packages_x0vnc_start.rc == 0
   check_mode: false
   tags: [xrdp]
