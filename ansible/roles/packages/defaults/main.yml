@@ -31,6 +31,8 @@ pacman_packages:
   - xorg-server
   - xorg-xinit
   - xclip
+  # VNC server for sharing :0 (xrdp VNC backend)
+  - tigervnc
   # i3wm ecosystem
   - i3-wm
   - i3status
@@ -104,6 +106,6 @@ aur_packages:
   # Add more AUR packages here, e.g.:
   - google-chrome
   - opencode
-  # xrdp remote desktop (xorgxrdp backend)
+  # xrdp remote desktop
+  # xrdp VNC backend connects to x0vncserver on :0, no xorgxrdp needed.
   - xrdp
-  - xorgxrdp
