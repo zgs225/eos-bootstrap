@@ -5,7 +5,7 @@ After=graphical-session.target
 BindsTo=graphical-session.target
 
 [Service]
-ExecStart=/usr/bin/x0vncserver -display :0 -rfbport 5900 -localhost -SecurityTypes None
+ExecStart=/usr/bin/x0vncserver -display :0 -rfbport 5900 -interface 127.0.0.1 -SecurityTypes None
 Restart=on-failure
 RestartSec=3
 
