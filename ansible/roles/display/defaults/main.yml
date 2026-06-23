@@ -1,2 +1,3 @@
 ---
 display_autologin_tty: tty1
+display_dri_symlinks_enabled: true
