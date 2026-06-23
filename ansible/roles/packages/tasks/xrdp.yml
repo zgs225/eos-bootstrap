@@ -42,6 +42,7 @@
     dest: /etc/systemd/system/xrdp.service.d/unbind-sesman.conf
     content: |
       [Unit]
+      Requires=
       BindsTo=
     owner: root
     group: root
