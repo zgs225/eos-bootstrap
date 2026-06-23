@@ -241,12 +241,11 @@
         patterns: "*.conf"
       register: sd_boot_entries
 
-    - name: Append kernel parameters to systemd-boot entries
-      ansible.builtin.lineinfile:
+    - name: Ensure kernel parameters in systemd-boot entries
+      ansible.builtin.replace:
         path: "{{ item.path }}"
-        regexp: '^options(?!.*i915\.enable_guc=3)(\s+.*)$'
-        backrefs: true
-        line: 'options\1 i915.enable_guc=3 module_blacklist=xe'
+        regexp: '^(options .+?)( i915\.enable_guc=3 module_blacklist=xe)*$'
+        replace: '\1 i915.enable_guc=3 module_blacklist=xe'
       loop: "{{ sd_boot_entries.files }}"
       loop_control:
         label: "{{ item.path }}"
@@ -258,12 +257,13 @@
     - not systemd_boot_dir.stat.exists
     - grub_config.stat.exists
   block:
-    - name: Append kernel parameters to GRUB config
-      ansible.builtin.lineinfile:
+    - name: Ensure kernel parameters in GRUB config
+      ansible.builtin.replace:
         path: /etc/default/grub
-        regexp: "^(?!.*i915\\\\.enable_guc=3)GRUB_CMDLINE_LINUX_DEFAULT='([^']*)'"
-        line: "GRUB_CMDLINE_LINUX_DEFAULT='\\1 i915.enable_guc=3 module_blacklist=xe'"
-        backrefs: true
+        regexp: >-
+          ^(GRUB_CMDLINE_LINUX_DEFAULT='.+?)(
+          i915\.enable_guc=3 module_blacklist=xe)*'$
+        replace: "\\1 i915.enable_guc=3 module_blacklist=xe'"
       notify: Regenerate initramfs
 
     - name: Regenerate GRUB config

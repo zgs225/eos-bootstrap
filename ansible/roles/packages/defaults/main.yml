@@ -31,6 +31,9 @@ pacman_packages:
   - xorg-server
   - xorg-xinit
   - xclip
+  # GPU drivers and diagnostics (Intel / virtio / modesetting)
+  - mesa
+  - mesa-utils
   # VNC server for sharing :0 (xrdp VNC backend)
   - tigervnc
   # i3wm ecosystem
