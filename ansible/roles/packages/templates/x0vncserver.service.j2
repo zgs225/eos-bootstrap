@@ -7,7 +7,7 @@ After=default.target
 Environment=DISPLAY=:0
 Environment=XAUTHORITY=/home/{{ target_user }}/.Xauthority
 ExecStartPre=/bin/sh -c 'while [ ! -S /tmp/.X11-unix/X0 ]; do sleep 2; done'
-ExecStart=/usr/bin/x0vncserver -display :0 -rfbport 5900 -interface 127.0.0.1 -SecurityTypes None
+ExecStart=/usr/bin/x0vncserver -display :0 -rfbport 5900 -SecurityTypes None
 Restart=on-failure
 RestartSec=3
 StartLimitInterval=0
