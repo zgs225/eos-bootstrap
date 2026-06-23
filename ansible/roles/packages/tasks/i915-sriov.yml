@@ -197,9 +197,12 @@
   community.general.pacman:
     name:
       - intel-media-driver
+      - libva-intel-driver
       - libva-utils
       - intel-compute-runtime
       - clinfo
+      - vulkan-intel
+      - vulkan-tools
     state: present
   tags: [packages, i915-sriov]
 
