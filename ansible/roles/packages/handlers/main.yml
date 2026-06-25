@@ -9,3 +9,40 @@
   become: true
   ansible.builtin.systemd:
     daemon_reload: true
+
+- name: Restart xrdp
+  become: true
+  ansible.builtin.systemd:
+    name: xrdp.service
+    state: restarted
+
+- name: Reload user systemd
+  become: true
+  become_user: "{{ target_user }}"
+  vars:
+    _uid: "{{ lookup('pipe', 'id -u ' + target_user) | trim | int }}"
+  ansible.builtin.systemd:
+    scope: user
+    daemon_reload: true
+  register: packages_user_reload
+  failed_when: false
+  changed_when: packages_user_reload is success
+  check_mode: false
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ _uid }}"
+
+- name: Restart x0vncserver
+  become: true
+  become_user: "{{ target_user }}"
+  vars:
+    _uid: "{{ lookup('pipe', 'id -u ' + target_user) | trim | int }}"
+  ansible.builtin.systemd:
+    name: x0vncserver.service
+    scope: user
+    state: restarted
+  register: packages_x0vnc_restart
+  failed_when: false
+  changed_when: packages_x0vnc_restart is success
+  check_mode: false
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ _uid }}"

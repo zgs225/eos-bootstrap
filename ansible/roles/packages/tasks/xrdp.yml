@@ -1,0 +1,156 @@
+---
+- name: Deploy xrdp.ini with VNC backend
+  become: true
+  ansible.builtin.template:
+    src: xrdp.ini.j2
+    dest: /etc/xrdp/xrdp.ini
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart xrdp
+  tags: [xrdp]
+
+- name: Create xrdp.service systemd override directory
+  become: true
+  ansible.builtin.file:
+    path: /etc/systemd/system/xrdp.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  tags: [xrdp]
+
+- name: Deploy xrdp restart-on-failure override
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/xrdp.service.d/restart.conf
+    content: |
+      [Service]
+      Restart=on-failure
+      RestartSec=5
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart xrdp
+  tags: [xrdp]
+
+- name: Deploy xrdp unbind-sesman override
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/xrdp.service.d/unbind-sesman.conf
+    content: |
+      [Unit]
+      Requires=
+      BindsTo=
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart xrdp
+  tags: [xrdp]
+
+- name: Enable and start xrdp.service
+  become: true
+  ansible.builtin.systemd:
+    name: xrdp.service
+    enabled: true
+    state: started
+    daemon_reload: true
+  tags: [xrdp]
+
+- name: Disable and stop xrdp-sesman.service
+  become: true
+  ansible.builtin.systemd:
+    name: xrdp-sesman.service
+    enabled: false
+    state: stopped
+  tags: [xrdp]
+
+- name: Create target_user systemd user directory
+  become: true
+  become_user: "{{ target_user }}"
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.config/systemd/user"
+    state: directory
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: "0755"
+  tags: [xrdp]
+
+- name: Deploy x0vncserver user service
+  become: true
+  become_user: "{{ target_user }}"
+  ansible.builtin.template:
+    src: x0vncserver.service.j2
+    dest: "/home/{{ target_user }}/.config/systemd/user/x0vncserver.service"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: "0644"
+  notify:
+    - Reload user systemd
+    - Restart x0vncserver
+  tags: [xrdp]
+
+- name: Enable x0vncserver user service
+  become: true
+  become_user: "{{ target_user }}"
+  vars:
+    _uid: "{{ lookup('pipe', 'id -u ' + target_user) | trim | int }}"
+  ansible.builtin.systemd:
+    name: x0vncserver.service
+    enabled: true
+    scope: user
+    daemon_reload: true
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ _uid }}"
+  tags: [xrdp]
+
+- name: Ensure default.target.wants directory exists
+  become: true
+  become_user: "{{ target_user }}"
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.config/systemd/user/default.target.wants"
+    state: directory
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: "0755"
+  tags: [xrdp]
+
+- name: Link x0vncserver to default.target.wants
+  become: true
+  become_user: "{{ target_user }}"
+  ansible.builtin.file:
+    src: "/home/{{ target_user }}/.config/systemd/user/x0vncserver.service"
+    dest: "/home/{{ target_user }}/.config/systemd/user/default.target.wants/x0vncserver.service"
+    state: link
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+  tags: [xrdp]
+
+- name: Remove old graphical-session.target symlink
+  become: true
+  become_user: "{{ target_user }}"
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.config/systemd/user/graphical-session.target.wants/x0vncserver.service"
+    state: absent
+  tags: [xrdp]
+
+- name: Start x0vncserver user service (best-effort)
+  become: true
+  become_user: "{{ target_user }}"
+  vars:
+    _uid: "{{ lookup('pipe', 'id -u ' + target_user) | trim | int }}"
+  ansible.builtin.systemd:
+    name: x0vncserver.service
+    state: started
+    scope: user
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ _uid }}"
+  register: packages_x0vnc_start
+  failed_when: false
+  changed_when: packages_x0vnc_start is success
+  check_mode: false
+  tags: [xrdp]
