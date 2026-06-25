@@ -30,12 +30,14 @@ pacman_packages:
   # Wayland compositor
   - hyprland
   - waybar
+  - anyrun
   - mako
   - hyprpaper
   - grim
   - slurp
   - swaylock
   - wl-clipboard
+  - wlogout
   - wdisplays
   - nwg-look
   - xdg-desktop-portal-hyprland
@@ -104,7 +106,3 @@ aur_packages:
   # Add more AUR packages here, e.g.:
   - google-chrome
   - opencode
-  # Wayland launcher (AUR)
-  - anyrun
-  # Wayland logout menu (AUR)
-  - wlogout

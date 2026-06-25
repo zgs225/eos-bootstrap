@@ -51,5 +51,12 @@ dotfiles_branch: "master"
 # ~/.config/chezmoi/key.txt (or $AGE_KEY_FILE).
 dotfiles_use_encryption: true
 
-# tty1 autologin → Hyprland (Wayland compositor).
+# tty1 autologin → startx → i3 chain on :0.
+# Must be true for xrdp VNC backend — x0vncserver shares :0 over VNC.
 display_autologin_enabled: true
+
+# xrdp remote desktop (VNC backend, shares :0 display).
+# Set to true to enable xrdp (RDP) + x0vncserver (VNC sharing :0).
+# xrdp-sesman is disabled; no separate X sessions.
+# Package tigervnc provides x0vncserver; xrdp provides RDP listener.
+xrdp_enabled: true
