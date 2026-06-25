@@ -27,23 +27,26 @@ pacman_packages:
   - networkmanager
   - network-manager-applet
   - nm-connection-editor
-  # Wayland compositor
-  - hyprland
-  - waybar
-  - anyrun
-  - mako
-  - hyprpaper
-  - grim
-  - slurp
-  - swaylock
-  - wl-clipboard
-  - wlogout
-  - wdisplays
-  - nwg-look
-  - xdg-desktop-portal-hyprland
+  # Xorg / X11 (startx + i3 — no display manager)
+  - xorg-server
+  - xorg-xinit
+  - xclip
   # GPU drivers and diagnostics (Intel / virtio / modesetting)
   - mesa
   - mesa-utils
+  # VNC server for sharing :0 (xrdp VNC backend)
+  - tigervnc
+  # i3wm ecosystem
+  - i3-wm
+  - i3status
+  - i3lock
+  - polybar
+  - rofi
+  - dunst
+  - picom
+  - feh
+  - arandr
+  - lxappearance
   # Theming
   - gtk3
   - gtk4
@@ -106,3 +109,6 @@ aur_packages:
   # Add more AUR packages here, e.g.:
   - google-chrome
   - opencode
+  # xrdp remote desktop
+  # xrdp VNC backend connects to x0vncserver on :0, no xorgxrdp needed.
+  - xrdp
