@@ -2,9 +2,3 @@
 - name: Reload systemd
   ansible.builtin.systemd:
     daemon_reload: true
-
-- name: Reload udev
-  ansible.builtin.shell: |
-    udevadm control --reload
-    udevadm trigger
-  changed_when: false

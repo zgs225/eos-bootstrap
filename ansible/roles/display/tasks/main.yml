@@ -13,8 +13,3 @@
   when: display_autologin_enabled | default(true)
   ansible.builtin.include_tasks: autologin.yml
   tags: [display, autologin]
-
-- name: Configure DRI device symlinks
-  when: display_dri_symlinks_enabled | default(true)
-  ansible.builtin.include_tasks: dri-symlinks.yml
-  tags: [display, dri-symlinks]
