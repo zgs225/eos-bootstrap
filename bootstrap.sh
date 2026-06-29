@@ -10,6 +10,33 @@ die() { printf '\033[1;31m[bootstrap]\033[0m %s\n' "$*" >&2; exit 1; }
 
 command -v sudo >/dev/null 2>&1 || die "sudo is required"
 
+setup_proxy() {
+  local proxy_vars="HTTP_PROXY HTTPS_PROXY ALL_PROXY NO_PROXY"
+  local found=0
+  for v in $proxy_vars; do
+    if [[ -n "${!v:-}" ]]; then
+      found=1
+      break
+    fi
+  done
+  if [[ $found -eq 0 ]]; then
+    return
+  fi
+
+  for v in $proxy_vars; do
+    if [[ -n "${!v:-}" ]]; then
+      local lower="${v,,}"
+      export "$lower"="${!v}"
+      log "proxy: ${lower}=${!v}"
+    fi
+  done
+
+  sudo() { command sudo -E "$@"; }
+  log "proxy environment active (sudo -E enabled)"
+}
+
+setup_proxy
+
 # Resolve DOTFILES_REPO and DOTFILES_BRANCH from group_vars/all.yml.
 DOTFILES_REPO=""
 DOTFILES_BRANCH=""

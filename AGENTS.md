@@ -70,3 +70,18 @@ tests/idempotency.sh
 - **`user_groups` is appended**, not replaced (`append: true` in `groups.yml`) — adding a new group won't drop existing memberships.
 - The dotfiles repo is expected to be writable via the user's normal SSH key; the bootstrap script does not configure `~/.ssh/config` — that's the dotfiles repo's job.
 - **Display chain needs dotfiles-repo coordination.** The `display` role only installs Xorg packages and configures agetty autologin on tty1. The rest of the chain is in the dotfiles repo: `~/.xinitrc` must exec i3, and `~/.zprofile` must conditionally run `startx` on tty1 (`[ -z "${DISPLAY}" ] && [ "${XDG_VTNR}" -eq 1 ] && exec startx`). These are user-level files, so they belong in chezmoi, not this repo.
+
+## Proxy support
+
+- When bootstrapping behind a restrictive network, set standard proxy env vars before running `./bootstrap.sh`:
+  ```bash
+  export HTTP_PROXY=http://10.0.0.1:7890
+  export HTTPS_PROXY=http://10.0.0.1:7890
+  export ALL_PROXY=socks5://10.0.0.1:1080
+  ./bootstrap.sh
+  ```
+- Supported variables: `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY` (uppercase only; `bootstrap.sh` exports lowercase equivalents internally).
+- `ALL_PROXY` with `socks5://` scheme works for curl/pacman (see ArchWiki: Proxy server).
+- No `group_vars` changes needed — proxy is runtime-only, not machine identity.
+- `setup_proxy()` in `bootstrap.sh` also overrides `sudo` to `sudo -E` so proxy vars survive into privileged commands.
+- Ansible receives proxy vars via a play-level `environment` block (see `ansible/playbook.yml`), ensuring `become: true` tasks also use the proxy.

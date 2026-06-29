@@ -3,6 +3,11 @@
   hosts: localhost
   become: true
   gather_facts: true
+  environment:
+    http_proxy: "{{ lookup('env', 'http_proxy') }}"
+    https_proxy: "{{ lookup('env', 'https_proxy') }}"
+    all_proxy: "{{ lookup('env', 'all_proxy') }}"
+    no_proxy: "{{ lookup('env', 'no_proxy') }}"
 
   roles:
     - role: packages
