@@ -69,7 +69,6 @@ pacman_packages:
   - yamllint
   - python-yaml
   - linux-headers
-  - mkinitcpio
   - openssh
   - rsync
   - ripgrep
