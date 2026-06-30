@@ -1,0 +1,50 @@
+---
+- name: Install VM guest packages
+  when: is_vm | bool
+  community.general.pacman:
+    name: "{{ vm_pacman_packages }}"
+    state: present
+
+- name: Enable cloud-init services
+  when:
+    - is_vm | bool
+    - vm_services | length > 0
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop: "{{ vm_services | select('match', '^(cloud-init|cloud-config|cloud-final)') | list }}"
+  loop_control:
+    label: "{{ item }}"
+
+- name: Enable and start qemu-guest-agent
+  when:
+    - is_vm | bool
+    - "'qemu-guest-agent.service' in vm_services"
+  ansible.builtin.systemd:
+    name: qemu-guest-agent.service
+    enabled: true
+    state: started
+
+- name: Disable and stop VM guest services on bare metal
+  when: not (is_vm | bool)
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: false
+    state: stopped
+  loop:
+    - cloud-init-local.service
+    - cloud-init-main.service
+    - cloud-init-network.service
+    - cloud-config.service
+    - cloud-final.service
+    - qemu-guest-agent.service
+  loop_control:
+    label: "{{ item }}"
+  failed_when: false
+
+- name: Remove VM guest packages on bare metal
+  when: not (is_vm | bool)
+  community.general.pacman:
+    name: "{{ vm_pacman_packages }}"
+    state: absent

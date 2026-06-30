@@ -1,16 +1,15 @@
 ---
-- name: Detect bluetooth hardware via lspci/lsusb
-  ansible.builtin.shell: |
-    set -o pipefail
-    lspci -k 2>/dev/null | grep -qi 'bluetooth' \
-      || lsusb 2>/dev/null | grep -qi 'bluetooth'
+- name: Detect bluetooth hardware via kernel sysfs
+  ansible.builtin.find:
+    paths: /sys/class/bluetooth
+    file_type: any
   register: bt_hw_check
   changed_when: false
-  failed_when: bt_hw_check.rc not in [0, 1]
+  failed_when: false
   check_mode: false
 
 - name: Install bluez packages (bluetooth hardware detected)
-  when: bt_hw_check.rc == 0
+  when: bt_hw_check.files | length > 0
   community.general.pacman:
     name:
       - bluez
@@ -18,7 +17,7 @@
     state: present
 
 - name: Enable and start bluetooth.service (bluetooth hardware detected)
-  when: bt_hw_check.rc == 0
+  when: bt_hw_check.files | length > 0
   ansible.builtin.systemd:
     name: bluetooth.service
     enabled: true

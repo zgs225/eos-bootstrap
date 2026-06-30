@@ -20,10 +20,10 @@ user_groups:
 optional_services: []
 
 # Services relevant only in VM guests (Proxmox, QEMU/KVM, etc.).
-# Leave empty for bare-metal installs. When non-empty, the corresponding
-# cloud-init and qemu-guest-agent systemd services are enabled and started.
-# The packages (cloud-init, qemu-guest-agent) are always installed via
-# pacman_packages.yml regardless of this setting.
+# VM detection is automatic (ansible_virtualization_type). When running on
+# bare metal, cloud-init/qemu-guest-agent services are disabled and packages
+# removed. When in a VM, these services are enabled and started.
+# Adjust the list to match your VM environment's needs.
 vm_services:
   - cloud-init-local.service
   - cloud-init-main.service

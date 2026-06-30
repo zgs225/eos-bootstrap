@@ -7,14 +7,17 @@
   ansible.builtin.include_tasks: aur.yml
   tags: [packages, aur]
 
+- name: Detect VM environment
+  ansible.builtin.include_tasks: vm_detect.yml
+  tags: [packages, vm]
+
 - name: Conditionally install bluetooth
   ansible.builtin.include_tasks: bluetooth.yml
   tags: [packages, bluetooth]
 
-- name: Configure cloud-init and qemu-guest-agent when running in a VM
-  ansible.builtin.include_tasks: cloud_init.yml
-  when: vm_services | length > 0
-  tags: [packages, cloud-init]
+- name: Configure VM guest packages and services
+  ansible.builtin.include_tasks: vm_services.yml
+  tags: [packages, vm]
 
 - name: Conditionally install i915-sriov driver
   ansible.builtin.include_tasks: i915-sriov.yml
