@@ -13,6 +13,7 @@ pacman_packages:
   - vim
   - curl
   - wget
+  - git-lfs
   - jq
   - unzip
   - zip
