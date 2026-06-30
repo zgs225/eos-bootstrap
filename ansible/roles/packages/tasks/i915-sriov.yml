@@ -12,7 +12,7 @@
 - name: Check prerequisites for i915-sriov (after hw detection)
   ansible.builtin.set_fact:
     i915_sriov_needed: >-
-      {{ ansible_facts['virtualization_role'] == 'guest' and i915_sriov_needed | bool }}
+      {{ ansible_facts['virtualization_role'] == 'guest' and i915_hw_check.rc == 0 }}
 
 - name: Add i915 to empty MODULES in mkinitcpio.conf
   ansible.builtin.lineinfile:
