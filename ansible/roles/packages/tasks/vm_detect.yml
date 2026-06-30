@@ -2,4 +2,4 @@
 - name: Detect if running inside a VM
   ansible.builtin.set_fact:
     is_vm: >-
-      {{ ansible_virtualization_type in ['kvm', 'qemu', 'vmware', 'xen', 'virtualbox', 'hyper-v', 'parallels'] }}
+      {{ ansible_facts['virtualization_type'] in ['kvm', 'qemu', 'vmware', 'xen', 'virtualbox', 'hyper-v', 'parallels'] }}
