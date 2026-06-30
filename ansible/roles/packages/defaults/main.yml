@@ -112,7 +112,7 @@ aur_packages:
   # Add more AUR packages here, e.g.:
   - google-chrome
   - opencode
-  - clash-verge-bin
+  - clash-verge-rev-bin
   # xrdp remote desktop
   # xrdp VNC backend connects to x0vncserver on :0, no xorgxrdp needed.
   - xrdp
