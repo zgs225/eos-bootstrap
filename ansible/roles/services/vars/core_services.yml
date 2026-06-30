@@ -7,3 +7,4 @@ core_services:
   - docker.service
   - fstrim.timer
   - sshd.service
+  - tailscaled.service

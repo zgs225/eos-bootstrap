@@ -28,6 +28,7 @@ pacman_packages:
   - networkmanager
   - network-manager-applet
   - nm-connection-editor
+  - tailscale
   # Xorg / X11 (startx + i3 — no display manager)
   - xorg-server
   - xorg-xinit
@@ -107,10 +108,11 @@ vm_pacman_packages:
 
 aur_packages:
   # Fonts (nerd fonts for terminal icons: powerline, symbols, file icons)
-  - ttf-cascadia-code-nerd
+  - nerd-fonts
   # Add more AUR packages here, e.g.:
   - google-chrome
   - opencode
+  - clash-verge-bin
   # xrdp remote desktop
   # xrdp VNC backend connects to x0vncserver on :0, no xorgxrdp needed.
   - xrdp
