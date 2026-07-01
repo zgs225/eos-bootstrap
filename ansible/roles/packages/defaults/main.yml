@@ -24,6 +24,7 @@ pacman_packages:
   - htop
   - lsof
   - btop
+  - tree
   # Networking
   - networkmanager
   - network-manager-applet
@@ -97,6 +98,8 @@ pacman_packages:
   # Containers
   - docker
   - docker-compose
+  # Desktop Apps
+  - bitwarden
   # Cloud / VM guests (Proxmox, QEMU/KVM)
   # Only installed when running inside a VM (auto-detected via
   # ansible_virtualization_type). Service enablement is controlled by
