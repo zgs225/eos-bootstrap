@@ -94,6 +94,7 @@ pacman_packages:
   - tmux
   # Mise prerequisites
   - mise
+  - maim
   # Dotfile encryption (chezmoi age backend)
   - age
   # Containers
