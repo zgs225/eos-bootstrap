@@ -43,7 +43,6 @@ pacman_packages:
   # i3wm ecosystem
   - i3-wm
   - i3status
-  - i3lock
   - polybar
   - rofi
   - dunst
@@ -118,6 +117,7 @@ aur_packages:
   - google-chrome
   - opencode
   - clash-verge-rev-bin
+  - betterlockscreen
   # xrdp remote desktop
   # xrdp VNC backend connects to x0vncserver on :0, no xorgxrdp needed.
   - xrdp
