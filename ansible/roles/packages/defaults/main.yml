@@ -33,6 +33,7 @@ pacman_packages:
   # Xorg / X11 (startx + i3 — no display manager)
   - xorg-server
   - xorg-xinit
+  - xorg-xinput
   - xclip
   # GPU drivers and diagnostics (Intel / virtio / modesetting)
   - mesa
