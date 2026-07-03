@@ -35,6 +35,7 @@ pacman_packages:
   - xorg-xinit
   - xorg-xinput
   - xclip
+  - wmctrl
   - xdotool
   # GPU drivers and diagnostics (Intel / virtio / modesetting)
   - mesa
@@ -126,3 +127,4 @@ aur_packages:
   # xrdp remote desktop
   # xrdp VNC backend connects to x0vncserver on :0, no xorgxrdp needed.
   - xrdp
+  - libinput-gestures
