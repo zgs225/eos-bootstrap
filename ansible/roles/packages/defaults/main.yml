@@ -117,14 +117,12 @@ vm_pacman_packages:
   - spice-vdagent
 
 aur_packages:
-  # Fonts (nerd fonts for terminal icons: powerline, symbols, file icons)
   - nerd-fonts
-  # Add more AUR packages here, e.g.:
   - google-chrome
   - opencode
   - clash-verge-rev-bin
   - betterlockscreen
-  # xrdp remote desktop
-  # xrdp VNC backend connects to x0vncserver on :0, no xorgxrdp needed.
   - xrdp
   - libinput-gestures
+  - wps-office
+  - ttf-wps-fonts
