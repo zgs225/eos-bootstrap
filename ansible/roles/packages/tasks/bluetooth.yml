@@ -13,6 +13,7 @@
   community.general.pacman:
     name:
       - bluez
+      - blueman
       - bluez-utils
     state: present
 
