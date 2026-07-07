@@ -52,6 +52,8 @@ pacman_packages:
   - feh
   - arandr
   - lxappearance
+  - pamixer
+  - brightnessctl
   # Theming
   - gtk3
   - gtk4
@@ -120,6 +122,7 @@ aur_packages:
   - nerd-fonts
   - google-chrome
   - opencode
+  - cursor-bin
   - clash-verge-rev-bin
   - betterlockscreen
   - xrdp
