@@ -15,7 +15,7 @@ pacman_packages:
   - wget
   - git-lfs
   - jq
-  - yq
+  - go-yq
   - unzip
   - zip
   - p7zip
