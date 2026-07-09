@@ -55,6 +55,12 @@ pacman_packages:
   - lxappearance
   - pamixer
   - brightnessctl
+  # Audio
+  - pipewire
+  - pipewire-alsa
+  - pipewire-pulse
+  - wireplumber
+  - rtkit
   # Theming
   - gtk3
   - gtk4

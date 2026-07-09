@@ -1,0 +1,30 @@
+---
+- name: Enable and start pipewire-pulse user socket
+  become: true
+  become_user: "{{ target_user }}"
+  vars:
+    _uid: "{{ lookup('pipe', 'id -u ' + target_user) | trim | int }}"
+  ansible.builtin.systemd:
+    name: pipewire-pulse.socket
+    enabled: true
+    state: started
+    scope: user
+    daemon_reload: true
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ _uid }}"
+  tags: [packages, audio]
+
+- name: Enable and start wireplumber user service
+  become: true
+  become_user: "{{ target_user }}"
+  vars:
+    _uid: "{{ lookup('pipe', 'id -u ' + target_user) | trim | int }}"
+  ansible.builtin.systemd:
+    name: wireplumber.service
+    enabled: true
+    state: started
+    scope: user
+    daemon_reload: true
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ _uid }}"
+  tags: [packages, audio]

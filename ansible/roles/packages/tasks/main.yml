@@ -3,6 +3,10 @@
   ansible.builtin.include_tasks: pacman.yml
   tags: [packages, pacman]
 
+- name: Configure audio
+  ansible.builtin.include_tasks: audio.yml
+  tags: [packages, audio]
+
 - name: Install AUR packages
   ansible.builtin.include_tasks: aur.yml
   tags: [packages, aur]
