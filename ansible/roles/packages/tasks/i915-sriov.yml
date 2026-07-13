@@ -40,6 +40,26 @@
   when: i915_sriov_needed | bool
   tags: [packages, i915-sriov]
 
+- name: Validate i915-sriov-dkms directory is a valid git repo
+  ansible.builtin.shell: |
+    set -o pipefail
+    git -C /tmp/i915-sriov-dkms rev-parse --git-dir >/dev/null 2>&1
+  register: packages_i915_sriov_valid_git
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: i915_sriov_needed | bool
+  tags: [packages, i915-sriov]
+
+- name: Remove broken i915-sriov-dkms clone directory
+  ansible.builtin.file:
+    path: /tmp/i915-sriov-dkms
+    state: absent
+  when:
+    - i915_sriov_needed | bool
+    - packages_i915_sriov_valid_git.rc | default(0) != 0
+  tags: [packages, i915-sriov]
+
 - name: Clone i915-sriov-dkms upstream repo
   become: true
   become_user: "{{ target_user }}"
