@@ -7,6 +7,10 @@
   ansible.builtin.include_tasks: audio.yml
   tags: [packages, audio]
 
+- name: Install Thunar file manager and extensions
+  ansible.builtin.include_tasks: thunar.yml
+  tags: [packages, thunar]
+
 - name: Install AUR packages
   ansible.builtin.include_tasks: aur.yml
   tags: [packages, aur]

@@ -119,10 +119,25 @@ pacman_packages:
   - docker-compose
   # Desktop Apps
   - bitwarden
-  # Cloud / VM guests (Proxmox, QEMU/KVM)
-  # Only installed when running inside a VM (auto-detected via
-  # ansible_virtualization_type). Service enablement is controlled by
-  # `vm_services` in group_vars/all.yml.
+
+# Thunar file manager and extensions (X11 + i3wm default)
+thunar_packages:
+  - thunar
+  - thunar-volman
+  - thunar-archive-plugin
+  - gvfs
+  - gvfs-smb
+  - gvfs-nfs
+  - gvfs-mtp
+  - gvfs-afc
+  - udisks2
+  - tumbler
+  - xarchiver
+
+# Cloud / VM guests (Proxmox, QEMU/KVM)
+# Only installed when running inside a VM (auto-detected via
+# ansible_virtualization_type). Service enablement is controlled by
+# `vm_services` in group_vars/all.yml.
 vm_pacman_packages:
   - cloud-init
   - qemu-guest-agent
