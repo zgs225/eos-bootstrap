@@ -26,6 +26,7 @@ pacman_packages:
   - lsof
   - btop
   - tree
+  - pacman-contrib
   # Networking
   - networkmanager
   - network-manager-applet
@@ -139,3 +140,4 @@ aur_packages:
   - ttf-wps-fonts
   - eww
   - rofi-greenclip
+  - wemeet-bin
