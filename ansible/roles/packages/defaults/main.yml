@@ -12,6 +12,7 @@ pacman_packages:
   - sudo
   - vim
   - curl
+  - httpie
   - wget
   - git-lfs
   - jq
