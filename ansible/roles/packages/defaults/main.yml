@@ -28,6 +28,7 @@ pacman_packages:
   - btop
   - tree
   - pacman-contrib
+  - inotify-tools
   # Networking
   - networkmanager
   - network-manager-applet
