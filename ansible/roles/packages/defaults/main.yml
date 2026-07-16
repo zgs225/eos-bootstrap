@@ -12,6 +12,8 @@ pacman_packages:
   - sudo
   - vim
   - curl
+  - openbsd-netcat
+  - nmap
   - httpie
   - wget
   - git-lfs
@@ -73,6 +75,8 @@ pacman_packages:
   - noto-fonts-cjk
   - noto-fonts-emoji
   - ttf-dejavu
+  - kvantum
+  - kvantum-qt5
   # Input method (Chinese pinyin via fcitx5)
   - fcitx5
   - fcitx5-chinese-addons
