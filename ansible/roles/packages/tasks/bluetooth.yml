@@ -7,6 +7,7 @@
   changed_when: false
   failed_when: false
   check_mode: false
+  tags: [packages, bluetooth]
 
 - name: Install bluez packages (bluetooth hardware detected)
   when: bt_hw_check.files | length > 0
@@ -16,6 +17,18 @@
       - blueman
       - bluez-utils
     state: present
+
+- name: Deploy bluetooth main configuration
+  when: bt_hw_check.files | length > 0
+  ansible.builtin.template:
+    src: bluetooth/main.conf.j2
+    dest: /etc/bluetooth/main.conf
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+  notify: Restart bluetooth
+  tags: [packages, bluetooth]
 
 - name: Enable and start bluetooth.service (bluetooth hardware detected)
   when: bt_hw_check.files | length > 0

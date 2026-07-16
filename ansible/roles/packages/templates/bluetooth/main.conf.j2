@@ -1,0 +1,20 @@
+# {{ ansible_managed }}
+# See bluez package defaults or /etc/bluetooth/main.conf.bak for the full upstream file.
+
+[General]
+# Resolve remote device names for better UX.
+NameResolving = true
+
+# Allow adapters to enter Fast Connectable mode when supported.
+# Trade-off: slightly higher power consumption for faster reconnections.
+FastConnectable = true
+
+# Use Secure Connections when the peer supports them.
+SecureConnections = on
+
+# Keep privacy disabled to avoid compatibility issues with older devices.
+Privacy = off
+
+[Policy]
+# Automatically enable any Bluetooth controller as soon as it appears.
+AutoEnable = true

@@ -46,3 +46,9 @@
   check_mode: false
   environment:
     XDG_RUNTIME_DIR: "/run/user/{{ _uid }}"
+
+- name: Restart bluetooth
+  become: true
+  ansible.builtin.systemd:
+    name: bluetooth.service
+    state: restarted
