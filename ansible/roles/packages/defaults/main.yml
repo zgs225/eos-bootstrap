@@ -40,6 +40,7 @@ pacman_packages:
   - xorg-server
   - xorg-xinit
   - xorg-xinput
+  - xorg-xwininfo
   - xclip
   - wmctrl
   - xdotool
@@ -156,6 +157,7 @@ aur_packages:
   - nerd-fonts
   - google-chrome
   - opencode
+  - kimi-code
   - cursor-bin
   - clash-verge-rev-bin
   - betterlockscreen
