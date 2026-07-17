@@ -60,6 +60,10 @@ pacman_packages:
   - lxappearance
   - pamixer
   - brightnessctl
+  # Keyboard remapping (kernel evdev/uinput daemon, sub-1ms latency)
+  # python-xlib is required by keyd-application-mapper for X11 window-class detection.
+  - keyd
+  - python-xlib
   # Audio
   - pipewire
   - pipewire-alsa
