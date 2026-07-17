@@ -6,6 +6,7 @@ core_services:
   - NetworkManager.service
   - docker.service
   - fstrim.timer
+  - keyd.service
   - rtkit-daemon.service
   - sshd.service
   - tailscaled.service
