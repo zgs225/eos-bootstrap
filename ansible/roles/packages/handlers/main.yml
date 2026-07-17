@@ -56,6 +56,6 @@
 - name: Reload keyd
   become: true
   ansible.builtin.command: keyd reload
-  register: _keyd_reload
-  changed_when: _keyd_reload.rc == 0
-  failed_when: _keyd_reload.rc not in [0, 1]
+  register: packages_keyd_reload
+  changed_when: packages_keyd_reload.rc == 0
+  failed_when: packages_keyd_reload.rc not in [0, 1]
