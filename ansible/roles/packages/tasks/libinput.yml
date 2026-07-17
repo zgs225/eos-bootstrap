@@ -1,0 +1,22 @@
+---
+- name: Ensure /etc/libinput exists
+  ansible.builtin.file:
+    path: /etc/libinput
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  tags: [packages, libinput]
+
+- name: Deploy libinput local overrides
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/etc/libinput/{{ item | basename }}"
+    owner: root
+    group: root
+    mode: "0644"
+  with_fileglob:
+    - "libinput/*.quirks"
+  loop_control:
+    label: "{{ item | basename }}"
+  tags: [packages, libinput]

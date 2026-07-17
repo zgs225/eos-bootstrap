@@ -27,6 +27,10 @@
   ansible.builtin.include_tasks: keyd.yml
   tags: [packages, keyd]
 
+- name: Configure libinput quirks
+  ansible.builtin.include_tasks: libinput.yml
+  tags: [packages, libinput]
+
 - name: Configure VM guest packages and services
   ansible.builtin.include_tasks: vm_services.yml
   tags: [packages, vm]

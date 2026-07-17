@@ -1,0 +1,11 @@
+# keyd exposes a virtual keyboard device that libinput's hard-coded
+# "internal vs external" classification treats as external. On laptops
+# this makes "disable while typing" misfire against the built-in
+# trackpad. Marking keyd's device as internal pairs it with the
+# integrated pointer so the quirk logic works as intended.
+
+[Serial Keyboards]
+
+MatchUdevType=keyboard
+MatchName=keyd*keyboard
+AttrKeyboardIntegration=internal
