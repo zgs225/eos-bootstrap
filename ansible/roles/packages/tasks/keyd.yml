@@ -1,0 +1,19 @@
+---
+- name: Ensure /etc/keyd exists
+  ansible.builtin.file:
+    path: /etc/keyd
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  tags: [packages, keyd]
+
+- name: Deploy keyd system-wide configuration
+  ansible.builtin.template:
+    src: keyd/default.conf.j2
+    dest: /etc/keyd/default.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload keyd
+  tags: [packages, keyd]
