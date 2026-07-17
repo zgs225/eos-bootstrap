@@ -6,6 +6,9 @@
 target_user: "yuez"
 
 # User groups target_user should be added to.
+# `keyd` is required for keyd-application-mapper to reach /run/keyd.socket.
+# After the first bootstrap, the user must re-login once for the new
+# group to be effective in their session.
 user_groups:
   - wheel
   - docker
@@ -15,6 +18,7 @@ user_groups:
   - network
   - audio
   - tty
+  - keyd
 
 # Services to enable in addition to core_services. Empty by default.
 optional_services: []
