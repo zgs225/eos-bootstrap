@@ -23,6 +23,10 @@
   ansible.builtin.include_tasks: bluetooth.yml
   tags: [packages, bluetooth]
 
+- name: Configure keyd keyboard remapping
+  ansible.builtin.include_tasks: keyd.yml
+  tags: [packages, keyd]
+
 - name: Configure VM guest packages and services
   ansible.builtin.include_tasks: vm_services.yml
   tags: [packages, vm]
