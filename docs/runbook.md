@@ -185,3 +185,23 @@ no-ops without a datasource, qemu-guest-agent no-ops without the virtio
 3. Confirm env vars in X session: `echo "$GTK_IM_MODULE $QT_IM_MODULE $XMODIFIERS $SDL_IM_MODULE"` should print `fcitx fcitx @im=fcitx fcitx`. If blank, `~/.xprofile` is not being sourced — verify `startx` chain in `~/.zprofile`.
 4. Run `fcitx5-diagnose` and read the output.
 5. Open `fcitx5-configtool` to verify Pinyin is listed under "Available Input Methods" and ticked under "Current Input Methods".
+
+## Configure keyd (system-wide key remapping)
+
+`keyd` runs as `keyd.service` (enabled in `core_services`) and reads its config from `/etc/keyd/default.conf`. The file is a Jinja2 template deployed by Ansible from `ansible/roles/packages/templates/keyd/default.conf.j2`. Re-running `./bootstrap.sh` (or `ansible-playbook ansible/playbook.yml`) hot-reloads via `keyd reload` (handler `Reload keyd`).
+
+This machine uses i3 `$mod = Alt` plus keyd remapping `Alt+c/v/x/a → Ctrl+c/v/x/a` so the same key combo acts as both the i3 modifier and a GUI-style shortcut.
+
+To change the system-wide layer mapping:
+
+1. Edit `ansible/roles/packages/templates/keyd/default.conf.j2`.
+2. Run `./bootstrap.sh` (or just `ansible-playbook ansible/playbook.yml --tags keyd`).
+3. Verify: `sudo keyd listen` for live layer-state changes; `sudo journalctl -fu keyd` for daemon logs.
+
+Per-application overrides (e.g. whitelisting wezterm so native `Alt+c/v` keeps working) live in the **dotfiles repo** at `~/.config/keyd/app.conf` and are applied by `keyd-application-mapper` at runtime. After editing, send the running mapper a `USR1` to reload:
+
+```bash
+pkill -USR1 -f keyd-application-mapper
+```
+
+After the first bootstrap the user must re-login once so the `keyd` group is active for the mapper to reach `/run/keyd.socket`.

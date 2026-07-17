@@ -26,6 +26,7 @@ Boundary rule — do not violate:
 - `ansible/roles/kernel/templates/sysctl.d.conf.j2` — sysctl tunables (file-max, inotify, swappiness, BBR). Handler `Apply sysctl` runs `sysctl --system`.
 - `ansible/roles/kernel/defaults/main.yml::kernel_modules` — append module names here; rendered to `/etc/modules-load.d/eos.conf`.
 - `ansible/roles/packages/tasks/bluetooth.yml` — auto-detects bluetooth via `lspci -k` / `lsusb` and conditionally installs `bluez` + `bluez-utils` and enables `bluetooth.service`. No manual gate.
+- `ansible/roles/packages/tasks/keyd.yml` + `ansible/roles/packages/templates/keyd/default.conf.j2` — system-wide keyd remapping (`/etc/keyd/default.conf`). `keyd.service` is enabled via `core_services`. Per-application overrides (`~/.config/keyd/app.conf`) and the i3 autostart line live in the dotfiles repo — boundary rule applies.
 - `ansible/roles/display/tasks/autologin.yml` — creates a systemd drop-in at `/etc/systemd/system/getty@tty1.service.d/autologin.conf` to auto-login `target_user` on tty1 (VM autologin → startx → i3 chain). Defaults `display_autologin_tty: tty1`.
 
 ## Commands
@@ -70,6 +71,10 @@ tests/idempotency.sh
 - **`user_groups` is appended**, not replaced (`append: true` in `groups.yml`) — adding a new group won't drop existing memberships.
 - The dotfiles repo is expected to be writable via the user's normal SSH key; the bootstrap script does not configure `~/.ssh/config` — that's the dotfiles repo's job.
 - **Display chain needs dotfiles-repo coordination.** The `display` role only installs Xorg packages and configures agetty autologin on tty1. The rest of the chain is in the dotfiles repo: `~/.xinitrc` must exec i3, and `~/.zprofile` must conditionally run `startx` on tty1 (`[ -z "${DISPLAY}" ] && [ "${XDG_VTNR}" -eq 1 ] && exec startx`). These are user-level files, so they belong in chezmoi, not this repo.
+- **`keyd.service` requires `target_user` in the `keyd` group** to access `/run/keyd.socket` for `keyd-application-mapper`. The group is added via `user_groups` in `group_vars/all.yml`, but the new membership only takes effect after the user logs out and back in (or runs `newgrp keyd`). The mapper will silently fail to apply per-app overrides until then.
+- **keyd config hot-reload uses `keyd reload`, not `systemctl reload`.** The upstream `keyd.service` has no `ExecReload=`, so `Reload keyd` handler invokes the binary's IPC reload subcommand. The handler accepts rc 0/1 to tolerate the rare "daemon not yet up" race on first deploy.
+- **i3 `$mod = Alt` collides with app Alt-shortcuts.** Apps use Alt heavily (Alt+F4, Alt+Tab, Alt+Enter in Firefox menu accelerators, etc.). Because keyd rebinds Alt+c/v/x/a to Ctrl+c/v/x/a via the `alt` layer, expect to whitelist more apps in `~/.config/keyd/app.conf` over time. Check `~/.config/keyd/app.log` for the matched WM_CLASS strings.
+- **Right-Alt loses AltGr semantics.** The keyd template explicitly rebinds `rightalt = layer(alt)` which overrides the upstream default of `layer(altgr)`. Right-Alt international character entry (e.g. `AltGr+E` for `€` on European layouts) no longer works. Acceptable because CJK input goes through fcitx5; if you switch to a European layout later, change the rightalt line to `layer(altgr)` in `default.conf.j2`.
 
 ## Proxy support
 
