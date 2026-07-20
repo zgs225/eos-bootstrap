@@ -80,6 +80,7 @@ pacman_packages:
   - noto-fonts-cjk
   - noto-fonts-emoji
   - ttf-dejavu
+  - adobe-source-han-serif-cn-fonts
   - kvantum
   - kvantum-qt5
   # Input method (Chinese pinyin via fcitx5)
@@ -129,6 +130,10 @@ pacman_packages:
   - docker-compose
   # Desktop Apps
   - bitwarden
+  - zathura
+  - zathura-pdf-poppler
+  - mpv
+  - nsxiv
 
 # Thunar file manager and extensions (X11 + i3wm default)
 thunar_packages:
@@ -165,6 +170,7 @@ aur_packages:
   - libinput-gestures
   - wps-office
   - ttf-wps-fonts
+  - ttf-lxgw-wenkai
   - eww
   - rofi-greenclip
   - wemeet-bin
