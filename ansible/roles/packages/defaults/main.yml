@@ -134,6 +134,7 @@ pacman_packages:
   - zathura-pdf-poppler
   - mpv
   - nsxiv
+  - satty
 
 # Thunar file manager and extensions (X11 + i3wm default)
 thunar_packages:
