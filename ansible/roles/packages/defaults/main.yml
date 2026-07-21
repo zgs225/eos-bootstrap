@@ -176,3 +176,17 @@ aur_packages:
   - rofi-greenclip
   - wemeet-bin
   - buku
+
+# Chong Xi Small Seal (崇羲篆體) — system-installed font
+# Vendored archive lives at roles/packages/files/chongxi_seal.zip; the
+# task file extracts it idempotently into chongxi_seal_install_dir and
+# triggers the `Refresh font cache` handler. The URL and SHA-256 are
+# recorded here so the vendored asset can be re-verified or replaced
+# without code changes elsewhere.
+chongxi_seal_zip_name: chongxi_seal.zip
+chongxi_seal_otf_name: chongxi_seal.otf
+chongxi_seal_install_dir: /usr/local/share/fonts/chongxi
+chongxi_seal_source_url: >-
+  https://xiaoxue.iis.sinica.edu.tw/chongxi/files/chongxi_seal.zip
+chongxi_seal_source_sha256: >-
+  f2094efc193956ca794fb57e991c0a7218287ac3c69bc14966b2c9871c65b7a7

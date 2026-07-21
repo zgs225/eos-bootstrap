@@ -59,3 +59,9 @@
   register: packages_keyd_reload
   changed_when: packages_keyd_reload.rc == 0
   failed_when: packages_keyd_reload.rc not in [0, 1]
+
+- name: Refresh font cache
+  become: true
+  ansible.builtin.command:
+    cmd: fc-cache -f
+  changed_when: true

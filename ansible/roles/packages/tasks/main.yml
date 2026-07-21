@@ -15,6 +15,10 @@
   ansible.builtin.include_tasks: aur.yml
   tags: [packages, aur]
 
+- name: Install chongxi seal font
+  ansible.builtin.include_tasks: chongxi_seal.yml
+  tags: [packages, chongxi_seal]
+
 - name: Detect VM environment
   ansible.builtin.include_tasks: vm_detect.yml
   tags: [packages, vm]

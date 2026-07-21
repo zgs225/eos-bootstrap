@@ -1,0 +1,23 @@
+---
+- name: Ensure chongxi seal font directory exists
+  become: true
+  ansible.builtin.file:
+    path: "{{ chongxi_seal_install_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  tags: [packages, chongxi_seal]
+
+- name: Extract chongxi seal font
+  become: true
+  ansible.builtin.unarchive:
+    src: chongxi_seal.zip
+    dest: "{{ chongxi_seal_install_dir }}/"
+    remote_src: false
+    owner: root
+    group: root
+    mode: "0644"
+    creates: "{{ chongxi_seal_install_dir }}/{{ chongxi_seal_otf_name }}"
+  notify: Refresh font cache
+  tags: [packages, chongxi_seal]

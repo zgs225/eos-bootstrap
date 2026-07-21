@@ -205,3 +205,29 @@ pkill -USR1 -f keyd-application-mapper
 ```
 
 After the first bootstrap the user must re-login once so the `keyd` group is active for the mapper to reach `/run/keyd.socket`.
+
+## Update or reinstall a vendored system font
+
+The packages role installs a few non-package fonts by vendoring their
+archive under `ansible/roles/packages/files/` and extracting them into
+`/usr/local/share/fonts/<name>/` via an idempotent `copy` + `unarchive`
+chain. The `Refresh font cache` handler runs `fc-cache -f` only when the
+unarchive task reports `changed`.
+
+To refresh (currently: 崇羲篆體 / Chong Xi Small Seal):
+
+1. Drop the new `chongxi_seal.zip` over
+   `ansible/roles/packages/files/chongxi_seal.zip`.
+2. Update `chongxi_seal_source_sha256` in
+   `ansible/roles/packages/defaults/main.yml` to match.
+3. Re-run the role (or just the tag):
+
+   ```bash
+   ansible-playbook ansible/playbook.yml --tags chongxi_seal
+   ```
+
+4. Verify with fontconfig:
+
+   ```bash
+   fc-list | grep -i 'chong xi small seal'
+   ```
