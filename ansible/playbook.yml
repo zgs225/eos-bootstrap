@@ -16,5 +16,6 @@
     - role: network
     - role: kernel
     - role: power
+    - role: fingerprint
     - role: user
     - role: display

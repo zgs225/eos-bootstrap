@@ -1,0 +1,139 @@
+---
+# FocalTech FT9366 fingerprint sensor (2808:a658) via proprietary TOD driver.
+# Entire role is a no-op when the USB device is absent.
+# Heavy steps (pacman, git clone, compile, patchelf) are skipped when the
+# driver stack is already deployed.
+
+- name: Detect FocalTech FT9366 fingerprint sensor via lsusb
+  ansible.builtin.shell: |
+    set -o pipefail
+    lsusb 2>/dev/null | grep -q '{{ fingerprint_usb_vid }}:{{ fingerprint_usb_pid }}'
+  register: fingerprint_hw_check
+  changed_when: false
+  failed_when: fingerprint_hw_check.rc not in [0, 1]
+  check_mode: false
+  tags: [fingerprint]
+
+- name: Fingerprint sensor not detected — skipping role
+  ansible.builtin.debug:
+    msg: "No FocalTech FT9366 ({{ fingerprint_usb_vid }}:{{ fingerprint_usb_pid }}) found; skipping."
+  when: fingerprint_hw_check.rc != 0
+  tags: [fingerprint]
+
+- name: Check if driver stack is already deployed
+  when: fingerprint_hw_check.rc == 0
+  ansible.builtin.shell: |
+    set -o pipefail
+    test -f '{{ fingerprint_driver_path }}' &&
+    test -f '{{ fingerprint_shim_path }}' &&
+    patchelf --print-needed '{{ fingerprint_driver_path }}' | grep -q 'focaltech-shim.so'
+  register: fingerprint_installed_check
+  changed_when: false
+  failed_when: fingerprint_installed_check.rc not in [0, 1]
+  check_mode: false
+  tags: [fingerprint]
+
+- name: Build and deploy FocalTech FT9366 driver stack
+  when:
+    - fingerprint_hw_check.rc == 0
+    - fingerprint_installed_check.rc != 0
+  tags: [fingerprint]
+  block:
+    - name: Install fprintd and build dependencies
+      community.general.pacman:
+        name:
+          - fprintd
+          - libfprint
+          - gcc
+          - pkgconf
+          - libgusb
+          - patchelf
+        state: present
+
+    - name: Create build directory
+      ansible.builtin.file:
+        path: "{{ fingerprint_build_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Clone focaltech-ft9366-arch-shim repository
+      ansible.builtin.git:
+        repo: "{{ fingerprint_shim_repo }}"
+        dest: "{{ fingerprint_build_dir }}/src"
+        version: "{{ fingerprint_shim_repo_version }}"
+        depth: 1
+
+    - name: Compile compatibility shim
+      ansible.builtin.shell: |
+        set -o pipefail
+        gcc -shared -fPIC \
+          -Wl,--version-script=shim.map \
+          -o focaltech-shim.so shim.c \
+          $(pkg-config --cflags --libs glib-2.0) -ldl
+      args:
+        chdir: "{{ fingerprint_build_dir }}/src"
+        creates: "{{ fingerprint_build_dir }}/src/focaltech-shim.so"
+
+    - name: Deploy proprietary driver
+      ansible.builtin.copy:
+        src: "{{ fingerprint_build_dir }}/src/libfprint-2.so.2.0.0"
+        dest: "{{ fingerprint_driver_path }}"
+        owner: root
+        group: root
+        mode: "0755"
+        remote_src: true
+      notify: Restart fprintd
+
+    - name: Deploy compatibility shim
+      ansible.builtin.copy:
+        src: "{{ fingerprint_build_dir }}/src/focaltech-shim.so"
+        dest: "{{ fingerprint_shim_path }}"
+        owner: root
+        group: root
+        mode: "0755"
+        remote_src: true
+      notify: Restart fprintd
+
+    - name: Inject shim into proprietary driver via patchelf
+      ansible.builtin.command:
+        cmd: "patchelf --add-needed focaltech-shim.so {{ fingerprint_driver_path }}"
+      changed_when: true
+      notify: Restart fprintd
+
+- name: Ensure runtime configuration (fast path, always idempotent)
+  when: fingerprint_hw_check.rc == 0
+  tags: [fingerprint]
+  block:
+    - name: Deploy udev rules (device access)
+      ansible.builtin.copy:
+        src: "{{ fingerprint_build_dir }}/src/60-libfprint-2.rules"
+        dest: /etc/udev/rules.d/60-libfprint-2.rules
+        owner: root
+        group: root
+        mode: "0644"
+        remote_src: true
+      notify: Reload udev
+
+    - name: Deploy udev rules (USB autosuspend fix)
+      ansible.builtin.copy:
+        src: 80-focaltech-autosuspend.rules
+        dest: /etc/udev/rules.d/80-focaltech-autosuspend.rules
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Reload udev
+
+    - name: Enable fprintd service
+      ansible.builtin.systemd:
+        name: fprintd.service
+        enabled: true
+
+    - name: Configure PAM for fingerprint authentication
+      ansible.builtin.lineinfile:
+        path: /etc/pam.d/system-auth
+        line: "auth      sufficient                    pam_fprintd.so"
+        insertbefore: "^auth      required"
+        state: present
+      notify: Restart fprintd

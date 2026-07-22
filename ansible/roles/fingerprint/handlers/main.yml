@@ -1,0 +1,10 @@
+---
+- name: Restart fprintd
+  ansible.builtin.systemd:
+    name: fprintd.service
+    state: restarted
+
+- name: Reload udev
+  ansible.builtin.command:
+    cmd: udevadm control --reload-rules
+  changed_when: true

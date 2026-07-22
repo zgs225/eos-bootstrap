@@ -1,0 +1,13 @@
+---
+# FocalTech FT9366 fingerprint sensor (Realtek RTS5811 USB bridge).
+# Only activates when the matching USB device is present.
+
+fingerprint_usb_vid: "2808"
+fingerprint_usb_pid: "a658"
+
+fingerprint_shim_repo: "https://github.com/leopalladium/focaltech-ft9366-arch-shim.git"
+fingerprint_shim_repo_version: "main"
+fingerprint_build_dir: "/var/lib/eos-bootstrap/focaltech-ft9366"
+
+fingerprint_driver_path: "/usr/lib/libfprint-2.so.2.0.0"
+fingerprint_shim_path: "/usr/lib/focaltech-shim.so"
