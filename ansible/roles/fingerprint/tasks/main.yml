@@ -130,10 +130,19 @@
         name: fprintd.service
         enabled: true
 
-    - name: Configure PAM for fingerprint authentication
+    - name: Remove pam_fprintd from system-auth if present (breaks getty autologin)
       ansible.builtin.lineinfile:
         path: /etc/pam.d/system-auth
+        regexp: "^auth\\s+.*pam_fprintd\\.so"
+        state: absent
+
+    - name: Configure PAM for fingerprint authentication (per-service only)
+      ansible.builtin.lineinfile:
+        path: "/etc/pam.d/{{ item }}"
         line: "auth      sufficient                    pam_fprintd.so"
-        insertbefore: "^auth      required"
+        insertbefore: "^auth"
         state: present
+      loop:
+        - sudo
+        - i3lock
       notify: Restart fprintd
