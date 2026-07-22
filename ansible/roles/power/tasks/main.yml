@@ -24,3 +24,22 @@
     mode: "0644"
   notify: Apply tlp
   tags: [power]
+
+- name: Deploy eww power admin helper
+  ansible.builtin.copy:
+    src: eww-power-admin
+    dest: /usr/local/sbin/eww-power-admin
+    owner: root
+    group: root
+    mode: "0755"
+  tags: [power]
+
+- name: Sudoers drop for eww power admin
+  ansible.builtin.copy:
+    content: "{{ target_user }} ALL=(root) NOPASSWD: /usr/local/sbin/eww-power-admin\n"
+    dest: /etc/sudoers.d/eww-power
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s"
+  tags: [power]

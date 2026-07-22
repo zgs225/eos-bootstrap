@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Privileged power operations for the eww power popup (deployed by Ansible).
+# Allowed subcommands only; exposed to the user via a NOPASSWD sudoers drop.
+set -euo pipefail
+
+CONF=/etc/tlp.d/99-user.conf
+
+case "${1:-}" in
+    threshold)
+        case "${2:-}" in
+            60 | 80 | 100) ;;
+            *)
+                echo "usage: $0 threshold 60|80|100" >&2
+                exit 2
+                ;;
+        esac
+        printf 'STOP_CHARGE_THRESH_BAT0=%s\n' "$2" >"$CONF"
+        tlp start >/dev/null
+        ;;
+    fullcharge)
+        tlp fullcharge BAT0 >/dev/null
+        ;;
+    *)
+        echo "usage: $0 {threshold 60|80|100|fullcharge}" >&2
+        exit 2
+        ;;
+esac
