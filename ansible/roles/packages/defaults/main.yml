@@ -31,6 +31,10 @@ pacman_packages:
   - tree
   - pacman-contrib
   - inotify-tools
+  - acpi
+  - powertop
+  - tlp
+  - tlp-pd
   # Networking
   - networkmanager
   - network-manager-applet

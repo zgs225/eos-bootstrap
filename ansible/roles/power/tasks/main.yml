@@ -1,0 +1,26 @@
+---
+# Power management via TLP (profiles require TLP >= 1.9).
+
+- name: Read installed TLP version
+  ansible.builtin.command:
+    cmd: "tlp --version"
+  register: power_tlp_version
+  changed_when: false
+  tags: [power]
+
+- name: Assert TLP >= 1.9 for profile support
+  ansible.builtin.assert:
+    that:
+      - (power_tlp_version.stdout | regex_search('\\d+\\.\\d+(\\.\\d+)?') | default('0.0', true)) is version('1.9', '>=')
+    fail_msg: "TLP >= 1.9 is required for power profiles; found: {{ power_tlp_version.stdout }}"
+  tags: [power]
+
+- name: Deploy TLP drop-in config
+  ansible.builtin.copy:
+    src: tlp-eos.conf
+    dest: /etc/tlp.d/00-eos.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Apply tlp
+  tags: [power]

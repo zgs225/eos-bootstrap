@@ -1,0 +1,6 @@
+---
+- name: Apply tlp
+  become: true
+  ansible.builtin.command:
+    cmd: "tlp start"
+  changed_when: false

@@ -10,3 +10,5 @@ core_services:
   - rtkit-daemon.service
   - sshd.service
   - tailscaled.service
+  - tlp.service
+  - tlp-pd.service

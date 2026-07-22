@@ -15,5 +15,6 @@
     - role: services
     - role: network
     - role: kernel
+    - role: power
     - role: user
     - role: display
