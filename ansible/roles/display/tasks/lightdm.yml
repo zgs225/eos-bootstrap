@@ -22,7 +22,7 @@
       icon-theme-name = Papirus-Dark
       font-name = LXGW WenKai 10
       position = 50%,center 55%,center
-      indicators = ~host;~spacer;~clock;~spacer;~session;~a11y;~power
+      indicators = ~host;~spacer;~clock;~spacer;~a11y;~power
     owner: root
     group: root
     mode: "0644"
