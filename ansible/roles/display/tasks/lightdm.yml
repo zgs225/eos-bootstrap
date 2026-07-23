@@ -27,21 +27,6 @@
     mode: "0644"
   tags: [display, lightdm]
 
-- name: Install catppuccin-glass GTK theme system-wide
-  ansible.builtin.copy:
-    src: "/home/{{ target_user }}/.themes/catppuccin-glass/"
-    dest: /usr/share/themes/catppuccin-glass/
-    remote_src: true
-    owner: root
-    group: root
-    mode: "0644"
-    directory_mode: "0755"
-  when: >-
-    lookup('ansible.builtin.fileglob',
-           '/home/' + target_user + '/.themes/catppuccin-glass/*',
-           errors='ignore') | length > 0
-  tags: [display, lightdm]
-
 - name: Enable lightdm.service (starts on next boot)
   ansible.builtin.systemd:
     name: lightdm.service
