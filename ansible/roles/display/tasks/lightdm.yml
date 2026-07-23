@@ -4,6 +4,7 @@
     dest: /etc/lightdm/lightdm.conf
     content: |
       [Seat:*]
+      session-wrapper=/etc/lightdm/Xsession
       greeter-session=lightdm-gtk-greeter
       user-session=i3
     owner: root
