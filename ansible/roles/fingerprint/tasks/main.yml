@@ -125,6 +125,14 @@
         mode: "0644"
       notify: Reload udev
 
+    - name: Deploy suspend/resume hook (restart fprintd after resume)
+      ansible.builtin.copy:
+        src: focaltech-fprint-resume
+        dest: /usr/lib/systemd/system-sleep/focaltech-fprint-resume
+        owner: root
+        group: root
+        mode: "0755"
+
     - name: Enable fprintd service
       ansible.builtin.systemd:
         name: fprintd.service

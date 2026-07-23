@@ -1,0 +1,7 @@
+#!/bin/sh
+# Restart fprintd after resume: the FocalTech TOD driver can wedge across
+# suspend (stale device claim / dead scan path), leaving fingerprint unlock
+# dead at the lock screen. A fresh daemon clears both.
+case "$1" in
+    post) systemctl restart fprintd.service ;;
+esac
