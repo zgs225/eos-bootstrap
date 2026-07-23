@@ -17,6 +17,7 @@
     dest: /etc/lightdm/lightdm-gtk-greeter.conf
     content: |
       [greeter]
+      background = /usr/share/backgrounds/default.png
       theme-name = catppuccin-glass
       icon-theme-name = Papirus-Dark
       font-name = LXGW WenKai 10
