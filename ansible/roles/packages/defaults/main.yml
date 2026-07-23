@@ -172,6 +172,7 @@ aur_packages:
   - opencode
   - kimi-code
   - cursor-bin
+  - pi-bin
   - clash-verge-rev-bin
   - betterlockscreen
   - xrdp
