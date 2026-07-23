@@ -1,6 +1,9 @@
 ---
-- name: Remove getty autologin override (disabled)
-  when: not (display_autologin_enabled | default(true))
+# --- Getty autologin (legacy: getty → startx → i3) ---
+- name: Remove getty autologin override
+  when: >-
+    not (display_autologin_enabled | default(true))
+    or (display_manager | default('none')) != 'none'
   vars:
     unit_dir: "/etc/systemd/system/getty@{{ display_autologin_tty }}.service.d"
   ansible.builtin.file:
@@ -10,6 +13,14 @@
   tags: [display, autologin]
 
 - name: Configure getty autologin
-  when: display_autologin_enabled | default(true)
+  when:
+    - display_autologin_enabled | default(true)
+    - (display_manager | default('none')) == 'none'
   ansible.builtin.include_tasks: autologin.yml
   tags: [display, autologin]
+
+# --- LightDM ---
+- name: Configure LightDM
+  when: (display_manager | default('none')) == 'lightdm'
+  ansible.builtin.include_tasks: lightdm.yml
+  tags: [display, lightdm]

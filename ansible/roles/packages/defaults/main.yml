@@ -40,9 +40,12 @@ pacman_packages:
   - network-manager-applet
   - nm-connection-editor
   - tailscale
-  # Xorg / X11 (startx + i3 — no display manager)
+  # Xorg / X11 (LightDM + i3; startx kept as fallback)
   - xorg-server
   - xorg-xinit
+  # Display manager (LightDM greeter → PAM keyring unlock)
+  - lightdm
+  - lightdm-gtk-greeter
   - xorg-xinput
   - xorg-xwininfo
   - xclip

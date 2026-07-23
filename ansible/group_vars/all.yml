@@ -57,7 +57,13 @@ dotfiles_use_encryption: true
 
 # tty1 autologin → startx → i3 chain on :0.
 # Must be true for xrdp VNC backend — x0vncserver shares :0 over VNC.
-display_autologin_enabled: true
+display_autologin_enabled: false
+
+# Display manager backend: "lightdm" or "none".
+# - lightdm: LightDM greeter (password login, PAM keyring unlock).
+# - none:    getty autologin → startx → i3 (legacy, no keyring unlock).
+# Requires display_autologin_enabled: true for autologin in either path.
+display_manager: lightdm
 
 # xrdp remote desktop (VNC backend, shares :0 display).
 # Set to true to enable xrdp (RDP) + x0vncserver (VNC sharing :0).

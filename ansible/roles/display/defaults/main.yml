@@ -1,2 +1,3 @@
----
 display_autologin_tty: tty1
+# "lightdm" or "none"; overridden by group_vars/all.yml.
+display_manager: none

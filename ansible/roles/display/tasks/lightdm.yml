@@ -1,0 +1,41 @@
+---
+- name: Deploy lightdm.conf
+  ansible.builtin.copy:
+    dest: /etc/lightdm/lightdm.conf
+    content: |
+      [Seat:*]
+      greeter-session=lightdm-gtk-greeter
+      user-session=i3
+    owner: root
+    group: root
+    mode: "0644"
+  tags: [display, lightdm]
+
+- name: Deploy lightdm-gtk-greeter.conf
+  ansible.builtin.copy:
+    dest: /etc/lightdm/lightdm-gtk-greeter.conf
+    content: |
+      [greeter]
+      theme-name = catppuccin-glass
+      icon-theme-name = Papirus-Dark
+      font-name = LXGW WenKai 10
+      position = 50%,center 55%,center
+      indicators = ~host;~spacer;~clock;~spacer;~session;~a11y;~power
+    owner: root
+    group: root
+    mode: "0644"
+  tags: [display, lightdm]
+
+- name: Symlink catppuccin-glass GTK theme system-wide
+  ansible.builtin.file:
+    src: "/home/{{ target_user }}/.themes/catppuccin-glass"
+    dest: /usr/share/themes/catppuccin-glass
+    state: link
+  tags: [display, lightdm]
+
+- name: Enable lightdm.service (starts on next boot)
+  ansible.builtin.systemd:
+    name: lightdm.service
+    enabled: true
+    daemon_reload: true
+  tags: [display, lightdm]
