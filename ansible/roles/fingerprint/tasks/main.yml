@@ -136,7 +136,16 @@
         regexp: "^auth\\s+.*pam_fprintd\\.so"
         state: absent
 
+    - name: Remove pam_fprintd from i3lock if present (conflicts with lock-screen helper)
+      ansible.builtin.lineinfile:
+        path: /etc/pam.d/i3lock
+        regexp: "^auth\\s+.*pam_fprintd\\.so"
+        state: absent
+
     - name: Configure PAM for fingerprint authentication (per-service only)
+      # i3lock is intentionally excluded: lock-screen fingerprint unlock is
+      # handled by a parallel fprintd-verify helper (dotfiles i3 lock.sh);
+      # pam_fprintd inside i3lock's PAM stack would fight it for the device.
       ansible.builtin.lineinfile:
         path: "/etc/pam.d/{{ item }}"
         line: "auth      sufficient                    pam_fprintd.so"
@@ -144,5 +153,4 @@
         state: present
       loop:
         - sudo
-        - i3lock
       notify: Restart fprintd
