@@ -24,3 +24,8 @@
   when: (display_manager | default('none')) == 'lightdm'
   ansible.builtin.include_tasks: lightdm.yml
   tags: [display, lightdm]
+
+# --- Touchpad ---
+- name: Configure touchpad
+  ansible.builtin.include_tasks: touchpad.yml
+  tags: [display, touchpad]

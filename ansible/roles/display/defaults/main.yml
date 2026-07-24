@@ -1,3 +1,7 @@
 display_autologin_tty: tty1
 # "lightdm" or "none"; overridden by group_vars/all.yml.
 display_manager: none
+
+# macOS-style natural scrolling for touchpads, deployed as an Xorg
+# InputClass drop-in so it survives suspend/resume hotplug.
+display_touchpad_natural_scroll: true

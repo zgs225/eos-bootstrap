@@ -1,0 +1,19 @@
+---
+# Xorg reads /etc/X11/xorg.conf.d/ when the X server starts, so there is no
+# runtime reload: the setting takes effect on the next login/X restart.
+- name: Deploy touchpad natural-scrolling Xorg drop-in
+  when: display_touchpad_natural_scroll | default(true)
+  ansible.builtin.template:
+    src: touchpad-natural-scroll.conf.j2
+    dest: /etc/X11/xorg.conf.d/40-touchpad-natural-scroll.conf
+    owner: root
+    group: root
+    mode: "0644"
+  tags: [display, touchpad]
+
+- name: Remove touchpad natural-scrolling Xorg drop-in
+  when: not (display_touchpad_natural_scroll | default(true))
+  ansible.builtin.file:
+    path: /etc/X11/xorg.conf.d/40-touchpad-natural-scroll.conf
+    state: absent
+  tags: [display, touchpad]
