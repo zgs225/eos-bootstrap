@@ -31,9 +31,7 @@
     owner: root
     group: root
     mode: "0644"
-  notify:
-    - Reload systemd
-    - Restart xrdp
+  notify: Restart xrdp
   tags: [xrdp]
 
 - name: Deploy xrdp unbind-sesman override
@@ -47,9 +45,32 @@
     owner: root
     group: root
     mode: "0644"
-  notify:
-    - Reload systemd
-    - Restart xrdp
+  notify: Restart xrdp
+  tags: [xrdp]
+
+# daemon-reload must happen before any xrdp/sesman service operations so
+# the unbind-sesman override (Requires=) is picked up.  The handler alone
+# is not enough: on steady-state runs the override file is unchanged (ok),
+# the handler is never notified, and systemd still sees the stock
+# Requires=xrdp-sesman.service — starting xrdp would pull sesman back in.
+- name: Reload systemd to pick up xrdp overrides
+  become: true
+  ansible.builtin.systemd:
+    daemon_reload: true
+  changed_when: false
+  tags: [xrdp]
+
+# xrdp.service has Requires=xrdp-sesman.service.  On systemd 261 the
+# drop-in "Requires=" empty-assignment does NOT clear the dependency
+# (verified: the unit still pulls sesman in).  Stopping sesman therefore
+# also stops xrdp, making a disable-and-stop task inherently
+# non-idempotent.  We only disable sesman (prevent boot autostart) and
+# let xrdp manage its lifecycle at runtime.
+- name: Disable xrdp-sesman.service (boot autostart)
+  become: true
+  ansible.builtin.systemd:
+    name: xrdp-sesman.service
+    enabled: false
   tags: [xrdp]
 
 - name: Enable and start xrdp.service
@@ -58,15 +79,6 @@
     name: xrdp.service
     enabled: true
     state: started
-    daemon_reload: true
-  tags: [xrdp]
-
-- name: Disable and stop xrdp-sesman.service
-  become: true
-  ansible.builtin.systemd:
-    name: xrdp-sesman.service
-    enabled: false
-    state: stopped
   tags: [xrdp]
 
 - name: Create target_user systemd user directory
@@ -151,6 +163,5 @@
     XDG_RUNTIME_DIR: "/run/user/{{ _uid }}"
   register: packages_x0vnc_start
   failed_when: false
-  changed_when: packages_x0vnc_start is success
   check_mode: false
   tags: [xrdp]

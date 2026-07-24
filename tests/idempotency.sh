@@ -8,7 +8,7 @@ PLAYBOOK="ansible/playbook.yml"
 LIMIT="${LIMIT:-localhost}"
 
 echo "==> first run"
-if ! ansible-playbook "${PLAYBOOK}" --limit "${LIMIT}" --diff > /tmp/run1.log 2>&1; then
+if ! ansible-playbook "${PLAYBOOK}" --limit "${LIMIT}" > /tmp/run1.log 2>&1; then
   echo "ERROR: first run failed"
   tail -50 /tmp/run1.log
   exit 1

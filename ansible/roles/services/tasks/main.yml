@@ -6,25 +6,19 @@
   ansible.builtin.set_fact:
     all_services: "{{ core_services + optional_services }}"
 
-- name: Filter to services that have an installed unit file
-  ansible.builtin.shell: |
-    set -o pipefail
-    systemctl list-unit-files --no-legend --type=service,timer "{{ item }}" \
-      | grep -q '{{ item }}'
-  loop: "{{ all_services }}"
-  loop_control:
-    label: "{{ item }}"
-  register: unit_check
-  failed_when: unit_check.rc not in [0, 1]
+- name: List all installed service and timer unit files
+  ansible.builtin.command:
+    cmd: systemctl list-unit-files --no-legend --type=service,timer
+  register: all_unit_files
   changed_when: false
   check_mode: false
 
 - name: Enable and start installed services
   ansible.builtin.systemd:
-    name: "{{ item.item }}"
+    name: "{{ item }}"
     enabled: true
     state: started
-  loop: "{{ unit_check.results }}"
-  when: item.rc == 0
+  loop: "{{ all_services }}"
+  when: item in all_unit_files.stdout
   loop_control:
-    label: "{{ item.item }}"
+    label: "{{ item }}"
