@@ -1,8 +1,16 @@
 ---
+# Tags appear twice per block by design: on the include statement and in
+# apply: (propagates them to the dynamically included inner tasks).
 - name: Configure sysctl
-  ansible.builtin.include_tasks: sysctl.yml
+  ansible.builtin.include_tasks:
+    file: sysctl.yml
+    apply:
+      tags: [kernel, sysctl]
   tags: [kernel, sysctl]
 
 - name: Configure modules-load
-  ansible.builtin.include_tasks: modules.yml
+  ansible.builtin.include_tasks:
+    file: modules.yml
+    apply:
+      tags: [kernel, modules]
   tags: [kernel, modules]

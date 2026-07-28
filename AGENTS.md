@@ -17,10 +17,10 @@ Boundary rule — do not violate:
 ## Layout (entry points)
 
 - `bootstrap.sh` — top-level entry; resolves `dotfiles_repo` / `dotfiles_branch` / `dotfiles_use_encryption` by **grepping `ansible/group_vars/all.yml`** (not via `ansible-inventory`). Keep those grep patterns stable.
-- `ansible/playbook.yml` — single playbook, `hosts: localhost`, `become: true`. Role order is significant: `packages → mise → services → network → kernel → user → display`.
+- `ansible/playbook.yml` — single playbook, `hosts: localhost`, `become: true`. Role order is significant: `packages → mise → services → network → kernel → power → fingerprint → user → display`.
 - `ansible/group_vars/all.yml` — the only place to set per-machine identity: `target_user`, `user_groups`, `optional_services`, `vm_services`, `dotfiles_repo`, `dotfiles_branch`, `dotfiles_use_encryption`.
 - `ansible/roles/services/vars/core_services.yml` — hardcoded, code-review required. `optional_services` (in `group_vars`) is the free-form list.
-- `ansible/roles/packages/vars/pacman_packages.yml` and `aur_packages.yml` — package lists. AUR is installed via `paru` with `become_user: target_user` and `PARU=1`; requires `paru` to already be on PATH (installed by `bootstrap.sh` step 2, not by Ansible).
+- `ansible/roles/packages/defaults/main.yml` — package lists: `pacman_packages`, `thunar_packages`, `vm_pacman_packages` (VM-only, auto-detected), `aur_packages`. Deliberately in `defaults/`, not `vars/`: Ansible only auto-loads `vars/main.yml` from a role, not sibling files. AUR is installed via `paru` with `become_user: target_user` and `PARU=1`; requires `paru` to already be on PATH (installed by `bootstrap.sh` step 2, not by Ansible).
 - `ansible/roles/network/files/nmconnection/*.nmconnection` — drop-in: any file here is `copy`-deployed to `/etc/NetworkManager/system-connections/` as `root:root 0600` and triggers a NetworkManager reload. `.gitkeep` is intentionally excluded by the glob.
 - `ansible/roles/user/files/polkit/{*.rules,*.pkla}` — same drop-in pattern to `/etc/polkit-1/rules.d/`.
 - `ansible/roles/kernel/templates/sysctl.d.conf.j2` — sysctl tunables (file-max, inotify, swappiness, BBR). Handler `Apply sysctl` runs `sysctl --system`.
@@ -53,7 +53,7 @@ tests/idempotency.sh
 
 - Bash: `set -euo pipefail`; `log`/`die` helpers; colors via ANSI escapes.
 - Ansible: localhost only, `forks=4`, `host_key_checking=False`, `pipelining=True` (`ansible/ansible.cfg`). `community.general >= 8.0.0` is required (`ansible/requirements.yml`).
-- All roles tag tasks (e.g., `tags: [packages, pacman]`) so individual steps can be run with `--tags`.
+- All roles tag tasks (e.g., `tags: [packages, pacman]`) so individual steps can be run with `--tags`. Role `tasks/main.yml` files fan out via dynamic `include_tasks`, which does **not** propagate tags to inner tasks — so each include block carries the tags twice: on the include statement and in `apply: { tags: [...] }`. New include-based roles must follow the same pattern or `--tags` will silently skip their inner tasks.
 - The `aur` task uses `changed_when: false` and `check_mode: false` — its idempotency is enforced by `paru --needed`, not by Ansible's change detection.
 - The `bluetooth` task uses `failed_when: rc not in [0, 1]` — detection must not error when hardware is absent.
 - The `sudoers` drop validates with `visudo -cf %s` before writing.
@@ -62,7 +62,7 @@ tests/idempotency.sh
 
 - **`dotfiles_repo` must be set** in `ansible/group_vars/all.yml` before `./bootstrap.sh` runs; the script dies with `dotfiles_repo not set` otherwise. SSH URLs (e.g., `git@github.com:...`) are fine and are the default.
 - **`dotfiles_use_encryption` requires a pre-placed age identity.** When `true`, `bootstrap.sh` checks for `~/.config/chezmoi/key.txt` (or `$AGE_KEY_FILE`) before invoking chezmoi. The `age` package is installed by the `packages` role. The encryption config (`[encryption.age] recipient`) lives in the dotfiles repo's `.chezmoi/chezmoi.toml`. Do not add identity-fetching logic to `bootstrap.sh` — key placement is manual by design.
-- **`vm_services` gates service enablement only.** `cloud-init` and `qemu-guest-agent` packages always install via `pacman_packages.yml`; they're harmless on bare metal (no-op without a virtio serial channel / datasource). Set `vm_services` to the standard Proxmox set (5 units) only on VM guests.
+- **VM guest packages are auto-detected, not always installed.** `vm_pacman_packages` (`cloud-init`, `qemu-guest-agent`, `spice-vdagent`) from `roles/packages/defaults/main.yml` install only when `is_vm` is true (`virtualization_role == 'guest'`) and are actively *removed* (plus their units disabled/stopped) on bare metal. On VM guests, the `vm_services` list in `group_vars/all.yml` then gates which of those units are enabled/started — set it to the standard Proxmox set (5 units) only on VM guests.
 - **Mise tool versions live in the dotfiles repo**, not here. `ansible/roles/mise/tasks/main.yml` only installs the `mise` binary; `mise install` runs from a `run_once_after_*` script in the dotfiles repo.
 - **`chezmoi update` alone does not regenerate `chezmoi.toml`.** The dotfiles repo's `.chezmoi.<format>.tmpl` is only re-rendered when `update --init` (or a fresh `init --apply`) runs. Plain `chezmoi update` does `git pull` + `apply` but leaves the existing config file untouched. `bootstrap.sh` uses `update --init` for that reason; if you ever invoke chezmoi by hand, prefer `chezmoi update --init` (or `chezmoi apply --init` after pulling) so template edits take effect.
 - **First run is not 100% Ansible-managed**: `paru` is bootstrapped by bash (no Ansible module for building it). The guard `if ! command -v paru` keeps re-runs safe.

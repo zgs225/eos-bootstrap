@@ -16,16 +16,27 @@
   when:
     - display_autologin_enabled | default(true)
     - (display_manager | default('none')) == 'none'
-  ansible.builtin.include_tasks: autologin.yml
+  # Tags appear twice by design: on the include statement and in apply:
+  # (propagates them to the dynamically included inner tasks).
+  ansible.builtin.include_tasks:
+    file: autologin.yml
+    apply:
+      tags: [display, autologin]
   tags: [display, autologin]
 
 # --- LightDM ---
 - name: Configure LightDM
   when: (display_manager | default('none')) == 'lightdm'
-  ansible.builtin.include_tasks: lightdm.yml
+  ansible.builtin.include_tasks:
+    file: lightdm.yml
+    apply:
+      tags: [display, lightdm]
   tags: [display, lightdm]
 
 # --- Touchpad ---
 - name: Configure touchpad
-  ansible.builtin.include_tasks: touchpad.yml
+  ansible.builtin.include_tasks:
+    file: touchpad.yml
+    apply:
+      tags: [display, touchpad]
   tags: [display, touchpad]

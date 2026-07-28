@@ -1,16 +1,30 @@
 ---
+# Tags appear twice per block by design: on the include statement and in
+# apply: (propagates them to the dynamically included inner tasks).
 - name: Configure user groups
-  ansible.builtin.include_tasks: groups.yml
+  ansible.builtin.include_tasks:
+    file: groups.yml
+    apply:
+      tags: [user, groups]
   tags: [user, groups]
 
 - name: Configure login shell
-  ansible.builtin.include_tasks: shell.yml
+  ansible.builtin.include_tasks:
+    file: shell.yml
+    apply:
+      tags: [user, shell]
   tags: [user, shell]
 
 - name: Configure sudoers
-  ansible.builtin.include_tasks: sudoers.yml
+  ansible.builtin.include_tasks:
+    file: sudoers.yml
+    apply:
+      tags: [user, sudoers]
   tags: [user, sudoers]
 
 - name: Configure polkit
-  ansible.builtin.include_tasks: polkit.yml
+  ansible.builtin.include_tasks:
+    file: polkit.yml
+    apply:
+      tags: [user, polkit]
   tags: [user, polkit]
