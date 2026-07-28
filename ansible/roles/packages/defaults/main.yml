@@ -207,6 +207,7 @@ aur_packages:
   - rofi-greenclip
   - wemeet-bin
   - buku
+  - synology-drive-client
 
 # Chong Xi Small Seal (崇羲篆體) — system-installed font
 # Vendored archive lives at roles/packages/files/chongxi_seal.zip; the
