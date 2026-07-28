@@ -135,6 +135,29 @@ pacman_packages:
   - docker
   - docker-buildx
   - docker-compose
+  # Kubernetes operations
+  - kubectl
+  - helm
+  - helmfile
+  - kubectx # includes kubens
+  - k9s
+  - kustomize
+  - stern # multi-pod log tailing
+  - krew # kubectl plugin manager
+  - kubectl-cert-manager
+  - kubectl-ingress-nginx
+  - kubeseal # sealed-secrets client
+  - kubeconform # manifest schema validation
+  - kube-linter # manifest static analysis
+  - popeye # live-cluster resource sanitizer
+  - kompose # docker-compose -> k8s manifests
+  # Kubernetes local clusters
+  - minikube
+  - kind
+  # Kubernetes GitOps / backup / CNI ops
+  - argocd
+  - velero
+  - cilium-cli
   # Desktop Apps
   - bitwarden
   - zathura
