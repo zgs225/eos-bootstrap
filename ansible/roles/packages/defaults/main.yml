@@ -35,6 +35,10 @@ pacman_packages:
   - powertop
   - tlp
   - tlp-pd
+  # Filesystem support (Windows)
+  - ntfs-3g
+  - exfatprogs
+  - dosfstools
   # Networking
   - networkmanager
   - network-manager-applet
