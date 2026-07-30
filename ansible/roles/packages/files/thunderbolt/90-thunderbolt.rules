@@ -1,0 +1,6 @@
+# Auto-authorize any Thunderbolt/USB4 router on hotplug (incl. daisy-chained
+# routers). With security=user the kernel's native connection manager keeps
+# handling DP/PCIe tunnels; this rule just flips the authorization gate so
+# docks (and their PCIe-tunneled NICs) work plug-and-play without boltd.
+# The host router (0-0) is already authorized=1, so it is naturally excluded.
+ACTION=="add", SUBSYSTEM=="thunderbolt", ATTR{authorized}=="0", ATTR{authorized}="1"

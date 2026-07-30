@@ -52,6 +52,13 @@
       tags: [packages, bluetooth]
   tags: [packages, bluetooth]
 
+- name: Configure Thunderbolt hotplug auto-authorization
+  ansible.builtin.include_tasks:
+    file: thunderbolt.yml
+    apply:
+      tags: [packages, thunderbolt]
+  tags: [packages, thunderbolt]
+
 - name: Configure keyd keyboard remapping
   ansible.builtin.include_tasks:
     file: keyd.yml

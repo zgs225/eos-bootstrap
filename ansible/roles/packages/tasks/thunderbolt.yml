@@ -1,0 +1,55 @@
+---
+# Thunderbolt/USB4 hotplug auto-authorization.
+#
+# With security=user (the Intel default when IOMMU DMA protection is on) the
+# kernel auto-establishes DisplayPort tunnels but blocks PCIe tunnels until
+# userspace flips the router's `authorized` attribute. Without a daemon doing
+# that, a dock's PCIe-tunneled NIC never appears. This task deploys a udev
+# rule that authorizes any router on add — generic plug-and-play for any
+# Thunderbolt device, no boltd required (and boltd must NOT be installed, as
+# it would take over authorization and fight the rule).
+#
+# No pacman package is needed: the `thunderbolt` module ships with the kernel
+# and is auto-loaded by its PCI alias. The modules-load fragment below is a
+# belt-and-braces guarantee that it is present early at boot so the rule can
+# fire for a cold-plugged dock. Entire task set is a no-op without hardware.
+
+- name: Detect Thunderbolt/USB4 controller via lspci
+  ansible.builtin.shell: |
+    set -o pipefail
+    lspci 2>/dev/null | grep -qiE 'thunderbolt|usb4'
+  register: thunderbolt_hw_check
+  changed_when: false
+  failed_when: thunderbolt_hw_check.rc not in [0, 1]
+  check_mode: false
+  tags: [packages, thunderbolt]
+
+- name: No Thunderbolt/USB4 controller detected — skipping
+  ansible.builtin.debug:
+    msg: "No Thunderbolt/USB4 controller found via lspci; skipping."
+  when: thunderbolt_hw_check.rc != 0
+  tags: [packages, thunderbolt]
+
+- name: Deploy Thunderbolt hotplug auto-authorization
+  when: thunderbolt_hw_check.rc == 0
+  tags: [packages, thunderbolt]
+  block:
+    - name: Ensure thunderbolt module loads at boot
+      ansible.builtin.copy:
+        content: "thunderbolt\n"
+        dest: /etc/modules-load.d/thunderbolt.conf
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Reload modules-load for thunderbolt
+
+    - name: Deploy udev rule (auto-authorize routers on add)
+      ansible.builtin.copy:
+        src: thunderbolt/90-thunderbolt.rules
+        dest: /etc/udev/rules.d/90-thunderbolt.rules
+        owner: root
+        group: root
+        mode: "0644"
+      notify:
+        - Reload udev for thunderbolt
+        - Apply thunderbolt udev triggers
