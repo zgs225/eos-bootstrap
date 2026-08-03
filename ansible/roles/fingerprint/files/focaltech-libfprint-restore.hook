@@ -1,0 +1,10 @@
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = libfprint
+
+[Action]
+Description = Restoring FocalTech fingerprint driver (shim injection)...
+When = PostTransaction
+Exec = /usr/local/sbin/focaltech-restore-driver

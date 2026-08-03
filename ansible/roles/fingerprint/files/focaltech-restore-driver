@@ -1,0 +1,24 @@
+#!/bin/sh
+# Restore the FocalTech proprietary libfprint driver after a libfprint
+# install/upgrade clobbers /usr/lib/libfprint-2.so.2.0.0 (that path is owned
+# by the libfprint package, so every pacman upgrade wipes the shim-injected
+# proprietary driver and the sensor disappears from fprintd).
+# Invoked by /etc/pacman.d/hooks/focaltech-libfprint-restore.hook.
+set -eu
+
+src=/var/lib/eos-bootstrap/focaltech-ft9366/src/libfprint-2.so.2.0.0
+dst=/usr/lib/libfprint-2.so.2.0.0
+
+# Driver stack not deployed on this machine (e.g. role hasn't run yet).
+[ -f "$src" ] || exit 0
+
+# Already shim-injected — nothing was clobbered.
+if patchelf --print-needed "$dst" 2>/dev/null | grep -q focaltech-shim.so; then
+  exit 0
+fi
+
+cp "$src" "$dst"
+patchelf --add-needed focaltech-shim.so "$dst"
+# fprintd is D-Bus-activated and usually idle-stopped; restart only if running
+# so it drops the stale (stock) library image.
+systemctl try-restart fprintd.service || true

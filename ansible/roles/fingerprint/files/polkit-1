@@ -1,0 +1,10 @@
+#%PAM-1.0
+# Managed by eos-bootstrap (fingerprint role).
+# pam_fprintd is added per-service here, NOT in system-auth: pam_fprintd in
+# system-auth breaks getty autologin and conflicts with the i3lock helper.
+# "sufficient" falls through to password auth on failure/timeout.
+auth      sufficient  pam_fprintd.so
+auth      include     system-auth
+account   include     system-auth
+password  include     system-auth
+session   include     system-auth

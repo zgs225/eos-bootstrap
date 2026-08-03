@@ -162,3 +162,42 @@
       loop:
         - sudo
       notify: Restart fprintd
+
+    - name: Deploy PAM config for polkit (fingerprint in polkit prompts)
+      # /etc/pam.d/polkit-1 does not exist by default (factory config lives in
+      # /usr/lib/pam.d/polkit-1), so a full file is deployed instead of
+      # lineinfile — required for Bitwarden "Unlock with system
+      # authentication" and any other polkit-based fingerprint prompt.
+      ansible.builtin.copy:
+        src: polkit-1
+        dest: /etc/pam.d/polkit-1
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Restart fprintd
+
+    - name: Deploy driver-restore script (runs from pacman hook)
+      ansible.builtin.copy:
+        src: focaltech-restore-driver
+        dest: /usr/local/sbin/focaltech-restore-driver
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Ensure /etc/pacman.d/hooks exists
+      ansible.builtin.file:
+        path: /etc/pacman.d/hooks
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Deploy pacman hook (restore driver after libfprint upgrades)
+      # /usr/lib/libfprint-2.so.2.0.0 is owned by the libfprint package;
+      # every upgrade wipes the shim-injected proprietary driver.
+      ansible.builtin.copy:
+        src: focaltech-libfprint-restore.hook
+        dest: /etc/pacman.d/hooks/focaltech-libfprint-restore.hook
+        owner: root
+        group: root
+        mode: "0644"

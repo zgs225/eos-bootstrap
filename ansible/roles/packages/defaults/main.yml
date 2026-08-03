@@ -146,6 +146,7 @@ pacman_packages:
   - helmfile
   - kubectx # includes kubens
   - k9s
+  - argocd # ArgoCD CLI client
   - kustomize
   - stern # multi-pod log tailing
   - krew # kubectl plugin manager
@@ -165,6 +166,7 @@ pacman_packages:
   - cilium-cli
   # Desktop Apps
   - bitwarden
+  - polkit-gnome # polkit auth agent (GUI prompts; autostarted from i3 config in dotfiles)
   - zathura
   - zathura-pdf-poppler
   - mpv
