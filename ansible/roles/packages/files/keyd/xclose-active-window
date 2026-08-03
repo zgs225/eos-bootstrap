@@ -1,0 +1,39 @@
+#!/bin/sh
+# xclose-active-window — send WM_DELETE_WINDOW (graceful close) to the
+# active window of the active X11 session.
+#
+# Designed to be invoked from keyd macros (command(...)): the keyd daemon
+# is a root system service with no X environment, so DISPLAY and
+# XAUTHORITY are discovered at runtime from the session owner's
+# processes. No hardcoded users, displays, or paths.
+#
+# A graceful WM_DELETE lets apps with "close to tray" intercept the
+# close; Ctrl+W-style accelerator emulation would bypass that.
+
+set -u
+
+# 1. Find the active graphical session (one attached to a seat) and its
+#    owner + DISPLAY, via logind.
+session=$(loginctl list-sessions --no-legend | awk '$4 != "" && $4 != "-" {print $1; exit}')
+[ -n "${session:-}" ] || { echo "xclose: no graphical session" >&2; exit 1; }
+
+user=$(loginctl show-session "$session" -p Name --value)
+display=$(loginctl show-session "$session" -p Display --value)
+[ -n "$user" ] && [ -n "$display" ] || { echo "xclose: session $session has no X display" >&2; exit 1; }
+
+uid=$(id -u "$user") || { echo "xclose: unknown user $user" >&2; exit 1; }
+
+# 2. Borrow XAUTHORITY from any process of that user connected to that
+#    display (WM, panel, terminal — any X client works).
+xauth=""
+for e in /proc/[0-9]*/environ; do
+    [ "$(stat -c %u "$e" 2>/dev/null)" = "$uid" ] || continue
+    env=$(tr '\0' '\n' < "$e" 2>/dev/null) || continue
+    case "$env" in *"DISPLAY=$display"*) ;; *) continue ;; esac
+    xauth=$(printf '%s\n' "$env" | sed -n 's/^XAUTHORITY=//p' | head -n1)
+    [ -n "$xauth" ] && break
+done
+[ -n "$xauth" ] || { echo "xclose: no XAUTHORITY found for $user on $display" >&2; exit 1; }
+
+# 3. Graceful close of the currently active window.
+exec env DISPLAY="$display" XAUTHORITY="$xauth" xdotool getactivewindow windowclose

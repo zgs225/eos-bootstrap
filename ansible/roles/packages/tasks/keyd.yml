@@ -17,3 +17,12 @@
     mode: "0644"
   notify: Reload keyd
   tags: [packages, keyd]
+
+- name: Deploy xclose-active-window helper for keyd command() macros
+  ansible.builtin.copy:
+    src: keyd/xclose-active-window
+    dest: /usr/local/bin/xclose-active-window
+    owner: root
+    group: root
+    mode: "0755"
+  tags: [packages, keyd]
