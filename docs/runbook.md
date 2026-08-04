@@ -136,6 +136,11 @@ ansible-playbook ansible/playbook.yml --ask-become-pass
 
 Edit `~/.config/mise/config.toml` in the dotfiles repo, then `chezmoi update --init` triggers `run_once_after_*` which runs `mise install`.
 
+Toolchains like Go are managed **exclusively** by mise: the pacman `go`
+package is listed in `packages_pacman_absent` and removed on every
+bootstrap run, because an independently upgraded pacman Go clashes with
+mise's GOROOT (`compile: version ... does not match go tool version`).
+
 ## Smoke test (fresh VM)
 
 1. Boot EndeavourOS installer, install base system.

@@ -178,6 +178,13 @@ pacman_packages:
   - nsxiv
   - satty
 
+# Packages that must NOT be installed via pacman because mise owns them.
+# The pacman `go` package upgrades independently of mise and its GOROOT
+# clashes with mise's Go toolchain ("compile: version go1.X does not match
+# go tool version go1.Y"), so it is actively removed on every run.
+packages_pacman_absent:
+  - go
+
 # Thunar file manager and extensions (X11 + i3wm default)
 thunar_packages:
   - thunar
