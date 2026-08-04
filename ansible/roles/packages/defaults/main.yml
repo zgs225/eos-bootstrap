@@ -134,6 +134,9 @@ pacman_packages:
   # Mise prerequisites
   - mise
   - maim
+  # Region GIF recording (screenrecord.sh, i3 $mod+Shift+5)
+  - gpu-screen-recorder
+  - slop
   - code
   - tesseract
   - tesseract-data-eng
