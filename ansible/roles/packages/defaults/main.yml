@@ -116,6 +116,10 @@ pacman_packages:
   - bat
   - eza
   - yazi
+  # yazi preview backends: video thumbnails, sixel/ascii fallback
+  # (PDF preview needs pdftoppm, already in `poppler` above)
+  - ffmpegthumbnailer
+  - chafa
   - zoxide
   # Shell
   - zsh
