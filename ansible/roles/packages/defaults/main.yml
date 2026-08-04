@@ -166,6 +166,7 @@ pacman_packages:
   - cilium-cli
   # Desktop Apps
   - bitwarden
+  - rbw # Bitwarden CLI (rbw-agent; rofi launcher bw module in dotfiles)
   - polkit-gnome # polkit auth agent (GUI prompts; autostarted from i3 config in dotfiles)
   - zathura
   - zathura-pdf-poppler
@@ -212,6 +213,7 @@ aur_packages:
   - ttf-lxgw-wenkai
   - eww
   - rofi-greenclip
+  - pinentry-rofi # pinentry for rbw, themed by dotfiles wrapper
   - wemeet-bin
   - buku
   - synology-drive-client
