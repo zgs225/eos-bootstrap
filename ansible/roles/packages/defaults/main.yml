@@ -220,6 +220,7 @@ aur_packages:
   - pi-bin
   - clash-verge-rev-bin
   - betterlockscreen
+  - xidlehook
   - xrdp
   - libinput-gestures
   - wps-office
