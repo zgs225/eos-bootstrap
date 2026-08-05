@@ -52,6 +52,7 @@ pacman_packages:
   - lightdm-gtk-greeter
   - xorg-xinput
   - xorg-xwininfo
+  - xorg-server-xvfb # headless render harness for greeter UI acceptance (greeter-preview)
   - xclip
   - wmctrl
   - xdotool

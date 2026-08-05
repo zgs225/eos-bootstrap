@@ -23,6 +23,9 @@
       font-name = LXGW WenKai 10
       position = 50%,center 55%,center
       indicators = ~host;~spacer;~clock;~spacer;~a11y;~power
+      # collapse the avatar column; the ticket is a narrow plaque,
+      # the wallpaper carries the portrait-scale imagery (2026-08-05)
+      hide-user-image = true
     owner: root
     group: root
     mode: "0644"
