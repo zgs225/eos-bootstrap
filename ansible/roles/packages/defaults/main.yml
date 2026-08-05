@@ -231,6 +231,7 @@ aur_packages:
   - rofi-greenclip
   - pinentry-rofi # pinentry for rbw, themed by dotfiles wrapper
   - wemeet-bin
+  - qqmusic-bin
   - buku
   - synology-drive-client
 
