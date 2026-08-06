@@ -1,0 +1,18 @@
+#
+# i3lock PAM — managed by eos-bootstrap (fingerprint role).
+# Deliberately NOT 'auth include system-local-login': system-auth's
+# pam_faillock authfail carries [default=die], which terminates the stack
+# on password failure and would block any fingerprint fallback.
+#
+#   1. faillock preauth  — blocks all methods while the account is locked out
+#   2. pam_unix          — typed password checked instantly (success=done)
+#   3. pam_fprintd       — wrong/empty password falls through into a bounded
+#                          fingerprint window; sensor powered off between
+#                          windows (FocalTech FT9366 thermal protection)
+#   4. faillock authfail — records a failure only if both methods failed
+#
+auth required   pam_faillock.so preauth
+auth requisite  pam_nologin.so
+auth [success=done default=ignore] pam_unix.so nullok
+auth sufficient pam_fprintd.so max-tries=1 timeout=10
+auth [default=die] pam_faillock.so authfail

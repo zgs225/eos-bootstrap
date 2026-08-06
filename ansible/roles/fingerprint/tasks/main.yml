@@ -156,28 +156,46 @@
         - sudo
       notify: Restart fprintd
 
-    - name: Configure PAM for i3lock fingerprint unlock (bounded verify window)
-      # i3lock calls pam_authenticate on Enter; pam_fprintd opens one bounded
-      # verify window per attempt and fprintd powers the sensor off between
-      # windows — idle lock time costs zero sensor power. Verified end-to-end
-      # 2026-08-06 (fingerprint unlock + password fallback, no claim errors).
-      # This replaces the old dotfiles polling helper (fprintd-verify loop),
-      # which kept the FocalTech FT9366 permanently powered and tripped its
-      # thermal protection. The 2026-07 "PAM doesn't work" verdict was two
-      # avoidable bugs: fingerprints enrolled under root instead of the user,
-      # and double i3lock instances racing for the device claim (dotfiles
-      # lock.sh now holds a flock singleton).
-      # max-tries=1: i3lock re-runs the whole PAM stack on every Enter and
-      # blocks single-threaded in pam_authenticate — module-level retries
-      # would only extend the UI freeze. timeout=10 keeps the frozen window
-      # short so password fallback stays responsive.
-      ansible.builtin.lineinfile:
-        path: /etc/pam.d/i3lock
-        regexp: "^auth\\s+.*pam_fprintd\\.so.*"
-        line: "auth      sufficient                    pam_fprintd.so max-tries=1 timeout=10"
-        insertbefore: "^auth"
-        state: present
-      notify: Restart fprintd
+    - name: Deploy PAM config for i3lock (password-first + fingerprint fallback)
+      # Full file instead of lineinfile: the ORDER of the auth stack is the
+      # whole point, and a single inserted line cannot express it.
+      #
+      # History (2026-08-06): the naive 'auth sufficient pam_fprintd.so' +
+      # 'auth include system-local-login' had two fatal flaws found by test:
+      #  1. fingerprint-first meant every password attempt waited the full
+      #     10s verify window before pam_unix ran (12s unlock delay);
+      #  2. password-first is impossible via system-local-login: system-auth's
+      #     'pam_faillock authfail [default=die]' kills the stack on password
+      #     failure, so no fallback module can ever run.
+      # The custom stack below verifies the typed password instantly
+      # (success=done), falls through to a bounded fingerprint window on
+      # wrong/empty password, and keeps faillock bookkeeping — with preauth
+      # first, so a lockout blocks fingerprint too (see faillock.conf task).
+      # Verified end-to-end: password unlock 378ms; empty Enter arms the
+      # fingerprint window ~2s later; wrong password falls through to the
+      # window; sensor powered off between windows (FT9366 thermal safety).
+      # The 2026-07 "PAM doesn't work" verdict was two avoidable bugs:
+      # fingerprints enrolled under root instead of the user, and double
+      # i3lock instances racing for the device claim (dotfiles lock.sh now
+      # holds a flock singleton).
+      ansible.builtin.copy:
+        src: i3lock-pam
+        dest: /etc/pam.d/i3lock
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Deploy faillock tuning (fingerprint-friendly lockout policy)
+      # pam_faillock defaults (deny=3, unlock_time=600) are hostile to a
+      # fingerprint-primary machine: missed verify windows count as failures,
+      # and a lockout also blocks fingerprint unlock (faillock preauth runs
+      # first in /etc/pam.d/i3lock) — observed both live during testing.
+      ansible.builtin.copy:
+        src: faillock.conf
+        dest: /etc/security/faillock.conf
+        owner: root
+        group: root
+        mode: "0644"
 
     - name: Deploy PAM config for polkit (fingerprint in polkit prompts)
       # /etc/pam.d/polkit-1 does not exist by default (factory config lives in
