@@ -29,7 +29,6 @@ pacman_packages:
   - lsof
   - strace
   - btop
-  - tree
   - pacman-contrib
   - inotify-tools
   - acpi
