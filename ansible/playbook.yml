@@ -15,6 +15,7 @@
     - role: services
     - role: network
     - role: kernel
+    - role: logging
     - role: power
     - role: fingerprint
     - role: user

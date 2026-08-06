@@ -1,0 +1,16 @@
+---
+# Tags appear twice per block by design: on the include statement and in
+# apply: (propagates them to the dynamically included inner tasks).
+- name: Configure journald retention
+  ansible.builtin.include_tasks:
+    file: journald.yml
+    apply:
+      tags: [logging, journald]
+  tags: [logging, journald]
+
+- name: Configure logrotate
+  ansible.builtin.include_tasks:
+    file: logrotate.yml
+    apply:
+      tags: [logging, logrotate]
+  tags: [logging, logrotate]

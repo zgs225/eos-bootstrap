@@ -1,0 +1,40 @@
+---
+- name: Enable compression of rotated logs in /etc/logrotate.conf
+  ansible.builtin.lineinfile:
+    path: /etc/logrotate.conf
+    regexp: '^#?\s*compress\s*$'
+    line: compress
+  when: logging_logrotate_compress
+
+- name: Deploy generic logrotate rules
+  ansible.builtin.template:
+    src: logrotate-eos.conf.j2
+    dest: /etc/logrotate.d/eos
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Validate logrotate config
+
+# Rotated files predating the compress option are still lying around
+# uncompressed (Xorg.0.log.old, lightdm *.old, btmp.1, ...).
+- name: Find uncompressed rotated logs
+  ansible.builtin.find:
+    paths: /var/log
+    patterns: ['*.old', '*.[0-9]']
+    file_type: file
+    recurse: true
+  register: logging_rotated_plain
+
+- name: Compress existing rotated logs
+  ansible.builtin.command:
+    cmd: "gzip -f {{ item.path | quote }}"
+  loop: "{{ logging_rotated_plain.files }}"
+  loop_control:
+    label: "{{ item.path }}"
+  changed_when: true
+
+- name: Enable logrotate.timer
+  ansible.builtin.systemd_service:
+    name: "{{ logging_logrotate_timer }}"
+    enabled: true
+    state: started

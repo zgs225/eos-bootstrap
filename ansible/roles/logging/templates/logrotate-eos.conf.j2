@@ -1,0 +1,42 @@
+# Managed by Ansible — do not edit by hand.
+# Generic rotation rules for text logs no package ships a logrotate
+# config for. Global options (weekly, rotate 4, create) come from
+# /etc/logrotate.conf; compress is enabled there too.
+#
+# Deliberately NOT covered:
+# - pacman.log     — pacman manages its own rotation (MaxLogFiles).
+# - lightdm/*.log  — lightdm rotates to *.log.old on every restart;
+#                    files stay tiny, a second rotator would just fight it.
+# - wtmp/btmp      — handled by /etc/logrotate.conf directly.
+
+# Xorg keeps the fd open and only rotates to .old on server restart, so
+# a crashed X leaves the log growing. copytruncate avoids the reopen issue.
+/var/log/Xorg.*.log {
+    rotate 2
+    compress
+    missingok
+    notifempty
+    copytruncate
+}
+
+# xrdp/xrdp-sesman never rotate their logs.
+/var/log/xrdp.log
+/var/log/xrdp-sesman.log {
+    rotate 4
+    compress
+    missingok
+    notifempty
+    copytruncate
+}
+
+# EndeavourOS installer relics: written once at install time. Compress
+# once, keep the archive, drop the now-empty original.
+/var/log/Calamares.log
+/var/log/endeavour-install.log {
+    size 1
+    rotate 1
+    compress
+    missingok
+    notifempty
+    nocreate
+}

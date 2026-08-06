@@ -1,0 +1,14 @@
+---
+- name: Restart systemd-journald for logging
+  become: true
+  ansible.builtin.systemd_service:
+    name: systemd-journald.service
+    state: restarted
+
+# Runs on every logging change: validates /etc/logrotate.d/eos syntax
+# before logrotate.timer picks it up. Accepts rc 0 only.
+- name: Validate logrotate config
+  become: true
+  ansible.builtin.command:
+    cmd: logrotate --debug /etc/logrotate.conf
+  changed_when: false

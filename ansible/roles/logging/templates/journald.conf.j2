@@ -1,0 +1,7 @@
+# Managed by Ansible — do not edit by hand.
+# journald retention for a developer workstation: bounded disk usage,
+# compressed archives, one month of history.
+[Journal]
+SystemMaxUse={{ logging_journald_system_max_use_mb }}M
+MaxRetentionSec={{ logging_journald_max_retention }}
+Compress={{ 'yes' if logging_journald_compress else 'no' }}

@@ -1,0 +1,41 @@
+---
+- name: Create journald drop-in directory
+  ansible.builtin.file:
+    path: "{{ logging_journald_dropin | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy journald retention drop-in
+  ansible.builtin.template:
+    src: journald.conf.j2
+    dest: "{{ logging_journald_dropin }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart systemd-journald for logging
+
+- name: Read journald disk usage
+  ansible.builtin.command:
+    cmd: journalctl --disk-usage
+  register: logging_journald_usage
+  changed_when: false
+
+# One-time shrink to the cap; the drop-in keeps it bounded afterwards.
+- name: Vacuum journals above the size cap
+  vars:
+    _logging_usage_raw: >-
+      {{ logging_journald_usage.stdout
+         | regex_replace('^.*take up ([0-9.]+)([KMGT]).*$', '\1 \2') }}
+    _logging_usage_mult: { K: 1024, M: 1048576, G: 1073741824, T: 1099511627776 }
+    _logging_usage_bytes: >-
+      {{ (_logging_usage_raw.split(' ')[0] | float)
+         * _logging_usage_mult[_logging_usage_raw.split(' ')[1]] | int }}
+    _logging_cap_bytes: "{{ logging_journald_system_max_use_mb * 1048576 }}"
+  ansible.builtin.command:
+    cmd: "journalctl --vacuum-size={{ logging_journald_system_max_use_mb }}M"
+  when:
+    - logging_journald_usage.stdout is search('take up [0-9.]+[KMGT]')
+    - _logging_usage_bytes | int > _logging_cap_bytes | int
+  changed_when: true
