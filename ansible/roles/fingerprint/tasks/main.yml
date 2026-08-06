@@ -144,16 +144,9 @@
         regexp: "^auth\\s+.*pam_fprintd\\.so"
         state: absent
 
-    - name: Remove pam_fprintd from i3lock if present (conflicts with lock-screen helper)
-      ansible.builtin.lineinfile:
-        path: /etc/pam.d/i3lock
-        regexp: "^auth\\s+.*pam_fprintd\\.so"
-        state: absent
-
     - name: Configure PAM for fingerprint authentication (per-service only)
-      # i3lock is intentionally excluded: lock-screen fingerprint unlock is
-      # handled by a parallel fprintd-verify helper (dotfiles i3 lock.sh);
-      # pam_fprintd inside i3lock's PAM stack would fight it for the device.
+      # Per-service instead of system-auth: pam_fprintd in system-auth probes
+      # the reader on every auth stack walk and broke getty autologin.
       ansible.builtin.lineinfile:
         path: "/etc/pam.d/{{ item }}"
         line: "auth      sufficient                    pam_fprintd.so"
@@ -161,6 +154,29 @@
         state: present
       loop:
         - sudo
+      notify: Restart fprintd
+
+    - name: Configure PAM for i3lock fingerprint unlock (bounded verify window)
+      # i3lock calls pam_authenticate on Enter; pam_fprintd opens one bounded
+      # verify window per attempt and fprintd powers the sensor off between
+      # windows — idle lock time costs zero sensor power. Verified end-to-end
+      # 2026-08-06 (fingerprint unlock + password fallback, no claim errors).
+      # This replaces the old dotfiles polling helper (fprintd-verify loop),
+      # which kept the FocalTech FT9366 permanently powered and tripped its
+      # thermal protection. The 2026-07 "PAM doesn't work" verdict was two
+      # avoidable bugs: fingerprints enrolled under root instead of the user,
+      # and double i3lock instances racing for the device claim (dotfiles
+      # lock.sh now holds a flock singleton).
+      # max-tries=1: i3lock re-runs the whole PAM stack on every Enter and
+      # blocks single-threaded in pam_authenticate — module-level retries
+      # would only extend the UI freeze. timeout=10 keeps the frozen window
+      # short so password fallback stays responsive.
+      ansible.builtin.lineinfile:
+        path: /etc/pam.d/i3lock
+        regexp: "^auth\\s+.*pam_fprintd\\.so.*"
+        line: "auth      sufficient                    pam_fprintd.so max-tries=1 timeout=10"
+        insertbefore: "^auth"
+        state: present
       notify: Restart fprintd
 
     - name: Deploy PAM config for polkit (fingerprint in polkit prompts)
