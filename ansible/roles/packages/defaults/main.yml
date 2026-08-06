@@ -27,6 +27,7 @@ pacman_packages:
   - tree
   - htop
   - lsof
+  - strace
   - btop
   - tree
   - pacman-contrib
