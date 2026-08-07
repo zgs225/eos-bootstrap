@@ -1,0 +1,4 @@
+# Managed by eos-bootstrap (fingerprint role).
+# Lets {{ target_user }} power-cycle the wedged fingerprint sensor without
+# a password prompt (which is impossible while locked out of the session).
+{{ target_user }} ALL=(root) NOPASSWD: /usr/local/sbin/focaltech-recover

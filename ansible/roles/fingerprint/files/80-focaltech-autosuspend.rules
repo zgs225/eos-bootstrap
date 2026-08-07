@@ -1,1 +1,8 @@
+# FocalTech FT9366: keep the device powered (no USB autosuspend).
+# History: shipped as control=on ("USB autosuspend fix") because the TOD
+# chip does not wake cleanly from USB autosuspend. 2026-08-06 experiment
+# flipped it to auto hoping idle suspend would heal the cumulative wedge —
+# it did not (sensor still wedged after a night), so reverted to on.
+# The wedge itself is handled by /usr/local/sbin/focaltech-recover (full
+# xHCI reset) or a real S3 suspend.
 ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="2808", ATTR{idProduct}=="a658", ATTR{power/control}="on", ATTR{power/autosuspend}="-1"

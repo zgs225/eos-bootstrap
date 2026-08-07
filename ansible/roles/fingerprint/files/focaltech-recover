@@ -1,0 +1,59 @@
+#!/bin/sh
+# focaltech-recover — power-cycle the FocalTech FT9366 fingerprint sensor.
+#
+# The TOD driver wedges after repeated verify cycles: fprintd floods
+# "fw9366_query_event_status get abnormality interrup flag" and captures
+# nothing, so fingerprint unlock silently stops matching. Neither
+# restarting fprintd nor unbinding the device clears it; a full reset of
+# the xHCI controller does (the device re-enumerates fresh).
+#
+# Side effect: every device on that controller (mouse, webcam, card
+# reader) briefly disconnects and re-enumerates (~5s).
+set -u
+
+stop_fprintd() {
+    systemctl stop fprintd.service 2>/dev/null || pkill -x fprintd 2>/dev/null || true
+}
+
+find_sensor() {
+    for f in /sys/bus/usb/devices/*/idProduct; do
+        [ "$(cat "$f" 2>/dev/null)" = "a658" ] || continue
+        dirname "$f"
+        return 0
+    done
+    return 1
+}
+
+rebind_controller() {
+    [ -e "/sys/bus/pci/drivers/xhci_hcd/$1" ] || {
+        echo "focaltech-recover: controller $1 not bound to xhci_hcd" >&2
+        return 1
+    }
+    echo "$1" > /sys/bus/pci/drivers/xhci_hcd/unbind
+    sleep 2
+    echo "$1" > /sys/bus/pci/drivers/xhci_hcd/bind
+}
+
+stop_fprintd
+
+dev="$(find_sensor || true)"
+if [ -n "$dev" ]; then
+    busnum="$(cat "$dev/busnum")"
+    ctrl="$(readlink -f "/sys/bus/usb/devices/usb$busnum")"
+    # ctrl is .../0000:00:14.0/usb3 — the PCI id is its parent's name
+    rebind_controller "$(basename "$(dirname "$ctrl")")" || exit 1
+else
+    # Sensor vanished entirely: rebind every xHCI controller to force a
+    # full bus rescan.
+    for c in /sys/bus/pci/drivers/xhci_hcd/0000:*; do
+        rebind_controller "$(basename "$c")"
+    done
+fi
+
+sleep 3
+if find_sensor >/dev/null; then
+    echo "focaltech-recover: sensor re-enumerated OK"
+else
+    echo "focaltech-recover: sensor NOT found after reset" >&2
+    exit 1
+fi

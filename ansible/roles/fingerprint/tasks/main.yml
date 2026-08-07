@@ -116,7 +116,9 @@
         remote_src: true
       notify: Reload udev
 
-    - name: Deploy udev rules (USB autosuspend fix)
+    - name: Deploy udev rules (USB autosuspend between verify windows)
+      # control=auto, not "on": the TOD chip wedges under repeated verify
+      # cycles and needs power-down rest between uses (see file comment).
       ansible.builtin.copy:
         src: 80-focaltech-autosuspend.rules
         dest: /etc/udev/rules.d/80-focaltech-autosuspend.rules
@@ -124,6 +126,26 @@
         group: root
         mode: "0644"
       notify: Reload udev
+
+    - name: Deploy fingerprint sensor recovery script (xHCI power cycle)
+      # When the sensor wedges ("abnormality interrup flag" flood, zero
+      # captures), only a full xHCI controller reset clears it — verified
+      # 2026-08-06 against fprintd restart and device unbind/bind.
+      ansible.builtin.copy:
+        src: focaltech-recover
+        dest: /usr/local/sbin/focaltech-recover
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Allow target_user to run focaltech-recover without password
+      ansible.builtin.template:
+        src: focaltech-recover.sudoers.j2
+        dest: /etc/sudoers.d/focaltech-recover
+        owner: root
+        group: root
+        mode: "0440"
+        validate: visudo -cf %s
 
     - name: Deploy suspend/resume hook (restart fprintd after resume)
       ansible.builtin.copy:
@@ -156,28 +178,20 @@
         - sudo
       notify: Restart fprintd
 
-    - name: Deploy PAM config for i3lock (password-first + fingerprint fallback)
-      # Full file instead of lineinfile: the ORDER of the auth stack is the
-      # whole point, and a single inserted line cannot express it.
+    - name: Deploy PAM config for i3lock (stock, password-only)
+      # Fingerprint unlock on the lock screen was REMOVED 2026-08-07.
       #
-      # History (2026-08-06): the naive 'auth sufficient pam_fprintd.so' +
-      # 'auth include system-local-login' had two fatal flaws found by test:
-      #  1. fingerprint-first meant every password attempt waited the full
-      #     10s verify window before pam_unix ran (12s unlock delay);
-      #  2. password-first is impossible via system-local-login: system-auth's
-      #     'pam_faillock authfail [default=die]' kills the stack on password
-      #     failure, so no fallback module can ever run.
-      # The custom stack below verifies the typed password instantly
-      # (success=done), falls through to a bounded fingerprint window on
-      # wrong/empty password, and keeps faillock bookkeeping — with preauth
-      # first, so a lockout blocks fingerprint too (see faillock.conf task).
-      # Verified end-to-end: password unlock 378ms; empty Enter arms the
-      # fingerprint window ~2s later; wrong password falls through to the
-      # window; sensor powered off between windows (FT9366 thermal safety).
-      # The 2026-07 "PAM doesn't work" verdict was two avoidable bugs:
-      # fingerprints enrolled under root instead of the user, and double
-      # i3lock instances racing for the device claim (dotfiles lock.sh now
-      # holds a flock singleton).
+      # History (2026-08-06): the PAM approach itself is sound — we built and
+      # verified a custom stack (password instant via [success=done], bounded
+      # fingerprint window as fallback, faillock bookkeeping). Password unlock
+      # measured 378ms. But on THIS hardware the FT9366 + TOD driver wedges
+      # permanently: after ~2 verify cycles fprintd floods "abnormality
+      # interrup flag" and captures nothing. Neither fprintd restarts, USB
+      # unbind/bind, xHCI resets, a real S3 suspend, nor an overnight rest
+      # healed it. So the sensor is unusable for daily unlock here and the
+      # stack is reverted to stock password-only (still file-deployed so
+      # drift self-heals). focaltech-recover + the resume hook are kept in
+      # case the wedge recurs for sudo/polkit fingerprint use.
       ansible.builtin.copy:
         src: i3lock-pam
         dest: /etc/pam.d/i3lock
@@ -185,17 +199,12 @@
         group: root
         mode: "0644"
 
-    - name: Deploy faillock tuning (fingerprint-friendly lockout policy)
-      # pam_faillock defaults (deny=3, unlock_time=600) are hostile to a
-      # fingerprint-primary machine: missed verify windows count as failures,
-      # and a lockout also blocks fingerprint unlock (faillock preauth runs
-      # first in /etc/pam.d/i3lock) — observed both live during testing.
-      ansible.builtin.copy:
-        src: faillock.conf
-        dest: /etc/security/faillock.conf
-        owner: root
-        group: root
-        mode: "0644"
+    - name: Remove fingerprint-era faillock tuning (restore distro defaults)
+      # faillock.conf was only tuned for fingerprint-primary unlock; with the
+      # lock screen back to password-only the distro defaults are correct.
+      ansible.builtin.file:
+        path: /etc/security/faillock.conf
+        state: absent
 
     - name: Deploy PAM config for polkit (fingerprint in polkit prompts)
       # /etc/pam.d/polkit-1 does not exist by default (factory config lives in
