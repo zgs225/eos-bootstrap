@@ -1,0 +1,64 @@
+#!/bin/sh
+# lid-watchdog — debounced lid-close suspend.
+#
+# Why this exists: the lid switch on this laptop (ASUS VivoBook N7600ZE,
+# ACPI PNP0C0D) intermittently reports "closed" while the lid is
+# physically open. With the stock logind HandleLidSwitch=suspend, every
+# spurious pulse drops the machine into s2idle mid-work: screen goes
+# black, and on resume the i915 GuC/HuC firmware reload prints boot-like
+# text to the console. Observed 2026-08-10: five false triggers in one
+# day, pulses lasting <1s to ~50s.
+#
+# logind's lid handling is disabled (see 10-lid-debounce.conf in
+# /etc/systemd/logind.conf.d/). This service is then the single
+# suspend-on-lid-close path: it polls the ACPI lid state and only runs
+# systemctl suspend after the state has read "closed" continuously for
+# DEBOUNCE_SECS, which filters the short spurious pulses. Every state
+# transition is logged so pulse durations stay measurable and the
+# threshold can be tuned.
+#
+# If pulses longer than DEBOUNCE_SECS keep occurring (or the sensor
+# sticks closed), software cannot distinguish them from a real lid
+# close — that points at the sensor/switch hardware and needs an RMA.
+#
+# Overridable via env for testing: LID_STATE_FILE, SUSPEND_CMD,
+# DEBOUNCE_SECS, POLL_INTERVAL.
+set -u
+
+LID_STATE_FILE="${LID_STATE_FILE:-/proc/acpi/button/lid/LID/state}"
+SUSPEND_CMD="${SUSPEND_CMD:-systemctl suspend}"
+DEBOUNCE_SECS="${DEBOUNCE_SECS:-10}"
+POLL_INTERVAL="${POLL_INTERVAL:-0.5}"
+
+log() { logger -t lid-watchdog "$*"; }
+
+last_state=""
+closed_since=""
+
+while :; do
+    state="$(sed -n 's/^state:[[:space:]]*//p' "$LID_STATE_FILE" 2>/dev/null)"
+    case "$state" in
+        closed|open) ;;
+        *) state="unknown" ;;
+    esac
+
+    if [ "$state" != "$last_state" ]; then
+        log "lid state: $state"
+        last_state="$state"
+    fi
+
+    if [ "$state" = "closed" ]; then
+        if [ -z "$closed_since" ]; then
+            closed_since="$(date +%s)"
+        elif [ "$(($(date +%s) - closed_since))" -ge "$DEBOUNCE_SECS" ]; then
+            log "lid closed for >= ${DEBOUNCE_SECS}s, suspending"
+            # shellcheck disable=SC2086 # SUSPEND_CMD is an env-overridable command line
+            $SUSPEND_CMD || log "suspend command failed (rc=$?)"
+            closed_since=""
+        fi
+    else
+        closed_since=""
+    fi
+
+    sleep "$POLL_INTERVAL"
+done

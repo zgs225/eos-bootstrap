@@ -43,3 +43,54 @@
     mode: "0440"
     validate: "visudo -cf %s"
   tags: [power]
+
+# Lid-close suspend goes through lid-watchdog (debounce) instead of
+# logind: the lid switch on this laptop intermittently reports "closed"
+# while the lid is open, so the stock HandleLidSwitch=suspend drops the
+# machine into s2idle mid-work (black screen, i915 firmware reload logs
+# on resume). See files/lid-watchdog for the full history.
+- name: Ensure logind drop-in directory exists
+  ansible.builtin.file:
+    path: /etc/systemd/logind.conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  tags: [power]
+
+- name: Deploy logind lid debounce drop-in (delegates lid to lid-watchdog)
+  ansible.builtin.copy:
+    src: logind-lid-debounce.conf
+    dest: /etc/systemd/logind.conf.d/10-lid-debounce.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart logind for lid debounce
+  tags: [power]
+
+- name: Deploy lid-watchdog debounce script
+  ansible.builtin.copy:
+    src: lid-watchdog
+    dest: /usr/local/sbin/lid-watchdog
+    owner: root
+    group: root
+    mode: "0755"
+  tags: [power]
+
+- name: Deploy lid-watchdog service unit
+  ansible.builtin.copy:
+    src: lid-watchdog.service
+    dest: /etc/systemd/system/lid-watchdog.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd for lid-watchdog
+  tags: [power]
+
+- name: Enable and start lid-watchdog service
+  ansible.builtin.systemd:
+    name: lid-watchdog.service
+    enabled: true
+    state: started
+    daemon_reload: true
+  tags: [power]

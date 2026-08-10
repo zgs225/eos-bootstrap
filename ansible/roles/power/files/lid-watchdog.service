@@ -1,0 +1,13 @@
+[Unit]
+Description=Debounced lid-close suspend (filters spurious lid switch events)
+Documentation=file:///usr/local/sbin/lid-watchdog
+After=systemd-logind.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/sbin/lid-watchdog
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

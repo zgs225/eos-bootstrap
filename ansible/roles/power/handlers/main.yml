@@ -4,3 +4,16 @@
   ansible.builtin.command:
     cmd: "tlp start"
   changed_when: false
+
+- name: Restart logind for lid debounce
+  become: true
+  ansible.builtin.systemd:
+    name: systemd-logind
+    state: restarted
+  tags: [power]
+
+- name: Reload systemd for lid-watchdog
+  become: true
+  ansible.builtin.systemd:
+    daemon_reload: true
+  tags: [power]
