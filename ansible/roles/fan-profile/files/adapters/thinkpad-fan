@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# Backend: legacy ThinkPad /proc/acpi/ibm/fan (thinkpad_acpi) -- fallback
+# for old ThinkPads without the ACPI platform-profile interface.
+#
+# Requires thinkpad_acpi fan_control support (module param fan_control=1
+# or a recent kernel where it defaults on). Coarse mapping:
+#   quiet -> level 1, balanced -> auto, performance -> level 7
+set -euo pipefail
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/../lib/common.sh"
+
+FAN=/proc/acpi/ibm/fan
+
+level_to_policy() {
+    case "$1" in
+        auto) echo balanced ;;
+        1 | 2) echo quiet ;;
+        6 | 7) echo performance ;;
+        *) echo balanced ;;
+    esac
+}
+
+policy_to_level() {
+    case "$(normalize "$1")" in
+        quiet) echo 1 ;;
+        balanced) echo auto ;;
+        performance) echo 7 ;;
+        *) return 1 ;;
+    esac
+}
+
+case "${1:-}" in
+    detect)
+        grep -qi '^LENOVO' /sys/class/dmi/id/sys_vendor 2>/dev/null || return 1
+        grep -qi 'ThinkPad' /sys/class/dmi/id/product_name 2>/dev/null || return 1
+        [ -r "$FAN" ]
+        ;;
+    choices)
+        printf 'quiet\nbalanced\nperformance\n'
+        ;;
+    get)
+        level_to_policy "$(awk '/^level:/ {print $2}' "$FAN" 2>/dev/null || echo auto)"
+        ;;
+    set)
+        [ $# -eq 2 ] || {
+            echo "usage: set <choice>" >&2
+            exit 2
+        }
+        [ -w "$FAN" ] || {
+            echo "$FAN is not writable (fan-profile set requires root and thinkpad_acpi fan_control)" >&2
+            exit 1
+        }
+        lvl=$(policy_to_level "$2") || {
+            echo "unsupported choice: $2 (available: quiet balanced performance)" >&2
+            exit 2
+        }
+        printf 'level %s\n' "$lvl" >"$FAN"
+        ;;
+    status)
+        fan_status_json
+        ;;
+    *)
+        echo "unknown adapter command: $1" >&2
+        exit 2
+        ;;
+esac

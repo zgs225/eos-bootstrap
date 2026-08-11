@@ -1,0 +1,10 @@
+[Unit]
+Description=Re-apply fan/thermal profile after resume
+After=suspend.target hibernate.target hybrid-sleep.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/fan-profile/fan-profile apply-resume
+
+[Install]
+WantedBy=suspend.target hibernate.target hybrid-sleep.target

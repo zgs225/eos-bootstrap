@@ -1,0 +1,220 @@
+#!/usr/bin/env bash
+# fan-profile -- unified fan/thermal policy control (cross-vendor).
+#
+# Backends ("adapters") are per-machine plug-ins in $LIB_DIR/adapters/.
+# Every adapter implements:
+#   detect    exit 0 when this machine is supported
+#   choices   print available policies (one per line)
+#   get       print current policy (native name)
+#   set <x>   apply policy x (native name; validated)
+#   status    optional; common hwmon scan is the default
+#
+# Canonical policy vocabulary (UI-facing):
+#   quiet | balanced | performance
+# Vendor aliases (low-power, overboost, ...) are normalized onto it via
+# normalize() in lib/common.sh.
+#
+# Permissions: `fan-profile set/default/apply-*` require root; the
+# sudoers drop-in grants NOPASSWD to the target user. All read paths are
+# world-readable.
+set -euo pipefail
+
+LIB_DIR=/usr/local/lib/fan-profile
+ADAPTERS_DIR="$LIB_DIR/adapters"
+CACHE_DIR=/run/fan-profile
+DEFAULT_CONF=/etc/fan-profile/default
+
+# Probe priority: first adapter whose detect() succeeds wins.
+ADAPTER_ORDER="acpi-platform-profile asus-throttle thinkpad-fan hwmon-pwm readonly"
+
+# shellcheck source=/dev/null
+source "$LIB_DIR/lib/common.sh"
+
+usage() {
+    cat <<'EOF'
+usage: fan-profile <command> [args]
+
+  status              current policy + fans + temps (JSON, single line)
+  choices             available policies (canonical, one per line)
+  get                 current policy (canonical)
+  set <policy>        apply policy (root)
+  probe               detect backend and print its name
+  default [policy]    show / set the boot default policy (set: root)
+  apply-default       apply the boot default (systemd boot unit)
+  apply-resume        re-apply last policy (systemd resume unit)
+EOF
+}
+
+# --- backend plumbing ------------------------------------------------------
+
+probe() {
+    local a
+    for a in $ADAPTER_ORDER; do
+        if [ -x "$ADAPTERS_DIR/$a" ] && "$ADAPTERS_DIR/$a" detect >/dev/null 2>&1; then
+            echo "$a"
+            return 0
+        fi
+    done
+    echo readonly
+}
+
+backend() {
+    # Use the cached probe result when present (rofi/eww/systemd share one
+    # probe; /run is tmpfs so the cache dies with the boot).
+    if [ -f "$CACHE_DIR/backend" ]; then
+        cat "$CACHE_DIR/backend"
+    else
+        local b
+        b=$(probe)
+        mkdir -p "$CACHE_DIR" 2>/dev/null || true
+        echo "$b" >"$CACHE_DIR/backend" 2>/dev/null || true
+        echo "$b"
+    fi
+}
+
+adapter_choices() { "$ADAPTERS_DIR/$(backend)" choices 2>/dev/null || true; }
+
+adapter_get() { "$ADAPTERS_DIR/$(backend)" get 2>/dev/null || true; }
+
+adapter_set() { "$ADAPTERS_DIR/$(backend)" set "$1"; }
+
+record_applied() { echo "$1" >"$CACHE_DIR/last" 2>/dev/null || true; }
+
+# --- commands ----------------------------------------------------------------
+
+cmd_choices() {
+    # Preserve adapter order, dedupe after normalization (no sort: the
+    # UI wants quiet/balanced/performance order, not alphabetical).
+    local c seen out
+    seen=" "
+    out=
+    for c in $(adapter_choices); do
+        [ -n "$c" ] || continue
+        c=$(normalize "$c")
+        case " $seen " in
+            *" $c "*) ;;
+            *) out="$out$c"$'\n' ; seen="$seen $c" ;;
+        esac
+    done
+    printf '%s' "$out"
+}
+
+cmd_get() {
+    local cur
+    cur=$(adapter_get)
+    [ -n "$cur" ] || cur=unsupported
+    normalize "$cur"
+}
+
+cmd_set() {
+    [ $# -eq 1 ] || { echo "usage: fan-profile set <choice>" >&2; exit 2; }
+    local want found c
+    want=$(normalize "$1")
+    found=
+    for c in $(cmd_choices); do
+        if [ "$(normalize "$c")" = "$want" ]; then
+            found=$c
+            break
+        fi
+    done
+    if [ -z "$found" ]; then
+        echo "fan-profile: '$1' is not available on this machine (choices: $(cmd_choices | tr '\n' ' '))" >&2
+        exit 2
+    fi
+    adapter_set "$found"
+    record_applied "$found"
+    echo "fan-profile: applied $found"
+}
+
+cmd_default() {
+    if [ $# -eq 1 ]; then
+        # root-only: persist the boot default policy.
+        mkdir -p "$(dirname "$DEFAULT_CONF")"
+        printf '%s\n' "$1" >"$DEFAULT_CONF"
+        echo "fan-profile: boot default set to $1"
+    elif [ $# -eq 0 ]; then
+        cat "$DEFAULT_CONF" 2>/dev/null || echo quiet
+    else
+        echo "usage: fan-profile default [policy]" >&2
+        exit 2
+    fi
+}
+
+cmd_apply_default() {
+    local b def
+    b=$(backend)
+    if [ "$b" = readonly ]; then
+        echo "fan-profile: no writable fan-policy interface on this machine, skipping"
+        return 0
+    fi
+    def=$(cat "$DEFAULT_CONF" 2>/dev/null || true)
+    [ -n "$def" ] || def=quiet
+    local target
+    target=$(resolve_choice "$def")
+    adapter_set "$target"
+    record_applied "$target"
+    echo "fan-profile: applied boot default '$target' on $b"
+}
+
+cmd_apply_resume() {
+    # Some ECs reset the policy on suspend; restore whatever was applied
+    # last (falls back to the boot default when nothing was set yet).
+    local last
+    if [ -f "$CACHE_DIR/last" ]; then
+        last=$(cat "$CACHE_DIR/last" 2>/dev/null || true)
+        if [ -n "$last" ]; then
+            adapter_set "$last" 2>/dev/null || cmd_apply_default
+            echo "fan-profile: restored '$last' after resume"
+            return 0
+        fi
+    fi
+    cmd_apply_default
+}
+
+cmd_status() {
+    local b supported current choices_json fans_json temp current_json first
+    b=$(backend)
+    if [ "$b" = readonly ]; then
+        supported=false
+        current=null
+        choices_json="[]"
+    else
+        supported=true
+        current=$(cmd_get)
+        current_json=$(json_str "$current")
+        choices_json="["
+        first=1
+        for c in $(cmd_choices); do
+            [ "$first" -eq 1 ] || choices_json="$choices_json,"
+            choices_json="$choices_json$(json_str "$c")"
+            first=0
+        done
+        choices_json="$choices_json]"
+    fi
+    fans_json=$(fan_status_json)
+    temp=$(pkg_temp)
+    printf '{"backend":%s,"supported":%s,"current":%s,"choices":%s,"fans":[%s],"temp_c":%d}\n' \
+        "$(json_str "$b")" "$supported" "${current_json:-null}" "$choices_json" "$fans_json" "$temp"
+}
+
+# --- dispatch -----------------------------------------------------------------
+
+cmd="${1:-}"
+[ $# -gt 0 ] && shift || true
+
+case "$cmd" in
+    status) cmd_status "$@" ;;
+    choices) cmd_choices ;;
+    get) cmd_get ;;
+    set) cmd_set "$@" ;;
+    probe) probe ;;
+    default) cmd_default "$@" ;;
+    apply-default) cmd_apply_default ;;
+    apply-resume) cmd_apply_resume ;;
+    -h | --help | "") usage ;;
+    *)
+        echo "fan-profile: unknown command '$cmd'" >&2
+        usage
+        exit 2
+        ;;
+esac

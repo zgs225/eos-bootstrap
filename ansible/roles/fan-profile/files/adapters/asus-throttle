@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# Backend: ASUS throttle_thermal_policy (asus-nb-wmi sysfs) -- fallback
+# for ASUS machines whose kernel does not register the ACPI
+# platform-profile interface.
+#
+# Kernel semantics (drivers/platform/x86/asus-wmi.c):
+#   0 = default (balanced), 1 = overboost (performance), 2 = silent (quiet)
+set -euo pipefail
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/../lib/common.sh"
+
+TP=/sys/devices/platform/asus-nb-wmi/throttle_thermal_policy
+
+detect() {
+    grep -qi '^ASUSTeK' /sys/class/dmi/id/sys_vendor 2>/dev/null || return 1
+    [ -r "$TP" ]
+}
+
+val_to_policy() {
+    case "$1" in
+        0) echo balanced ;;
+        1) echo performance ;;
+        2) echo quiet ;;
+        *) echo balanced ;;
+    esac
+}
+
+policy_to_val() {
+    case "$(normalize "$1")" in
+        quiet) echo 2 ;;
+        balanced) echo 0 ;;
+        performance) echo 1 ;;
+        *) return 1 ;;
+    esac
+}
+
+case "${1:-}" in
+    detect)
+        detect
+        ;;
+    choices)
+        printf 'quiet\nbalanced\nperformance\n'
+        ;;
+    get)
+        val_to_policy "$(cat "$TP" 2>/dev/null || echo 0)"
+        ;;
+    set)
+        [ $# -eq 2 ] || {
+            echo "usage: set <choice>" >&2
+            exit 2
+        }
+        [ -w "$TP" ] || {
+            echo "throttle_thermal_policy is not writable (fan-profile set requires root)" >&2
+            exit 1
+        }
+        val=$(policy_to_val "$2") || {
+            echo "unsupported choice: $2 (available: quiet balanced performance)" >&2
+            exit 2
+        }
+        printf '%s\n' "$val" >"$TP"
+        ;;
+    status)
+        fan_status_json
+        ;;
+    *)
+        echo "unknown adapter command: $1" >&2
+        exit 2
+        ;;
+esac

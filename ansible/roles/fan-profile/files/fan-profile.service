@@ -1,0 +1,11 @@
+[Unit]
+Description=Apply default fan/thermal profile
+After=multi-user.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/lib/fan-profile/fan-profile apply-default
+
+[Install]
+WantedBy=multi-user.target

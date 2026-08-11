@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# Backend: /sys/firmware/acpi/platform_profile -- the cross-vendor ACPI
+# platform-profile interface (ASUS, ThinkPad, Dell, HP, Framework, ...).
+set -euo pipefail
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/../lib/common.sh"
+
+PP=/sys/firmware/acpi/platform_profile
+PPC=/sys/firmware/acpi/platform_profile_choices
+
+case "${1:-}" in
+    detect)
+        [ -r "$PPC" ] && [ -r "$PP" ] || exit 1
+        ;;
+    choices)
+        cat "$PPC"
+        ;;
+    get)
+        cat "$PP"
+        ;;
+    set)
+        [ $# -eq 2 ] || {
+            echo "usage: set <choice>" >&2
+            exit 2
+        }
+        want=$(normalize "$2")
+        native=
+        for c in $(cat "$PPC"); do
+            [ -n "$c" ] || continue
+            if [ "$(normalize "$c")" = "$want" ]; then
+                native=$c
+                break
+            fi
+        done
+        [ -n "$native" ] || {
+            echo "unsupported choice: $2 (available: $(tr '\n' ' ' <"$PPC"))" >&2
+            exit 2
+        }
+        [ -w "$PP" ] || {
+            echo "platform_profile is not writable (fan-profile set requires root)" >&2
+            exit 1
+        }
+        printf '%s\n' "$native" >"$PP"
+        ;;
+    status)
+        fan_status_json
+        ;;
+    *)
+        echo "unknown adapter command: $1" >&2
+        exit 2
+        ;;
+esac

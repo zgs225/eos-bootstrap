@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# Backend: desktop hwmon PWM (lm-sensors style). v1 scope is deliberately
+# narrow: only "balanced" (auto / OS-controlled) is settable -- per-machine
+# custom curves belong to the fancontrol daemon and are out of scope.
+set -euo pipefail
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/../lib/common.sh"
+
+pwm_files() {
+    local hw f
+    for hw in /sys/class/hwmon/hwmon*; do
+        [ -d "$hw" ] || continue
+        for f in "$hw"/pwm*_enable; do
+            [ -r "$f" ] && echo "$f"
+        done
+    done
+}
+
+all_auto() {
+    # True when every PWM controller is in auto (2) or off (0) mode.
+    local f v ok=1
+    for f in $(pwm_files); do
+        v=$(cat "$f" 2>/dev/null || true)
+        case "$v" in
+            2 | 0) ;;
+            *) ok=0 ;;
+        esac
+    done
+    [ "$ok" -eq 1 ]
+}
+
+case "${1:-}" in
+    detect)
+        [ -n "$(pwm_files)" ]
+        ;;
+    choices)
+        printf 'balanced\n'
+        ;;
+    get)
+        if all_auto; then echo balanced; else echo manual; fi
+        ;;
+    set)
+        [ $# -eq 2 ] || {
+            echo "usage: set <choice>" >&2
+            exit 2
+        }
+        if [ "$(normalize "$2")" != balanced ]; then
+            echo "hwmon-pwm backend only supports 'balanced' (auto); custom curves belong to fancontrol" >&2
+            exit 2
+        fi
+        f=
+        wrote=0
+        for f in $(pwm_files); do
+            [ -w "$f" ] || continue
+            printf '2\n' >"$f" 2>/dev/null && wrote=1
+        done
+        [ "$wrote" -eq 1 ] || {
+            echo "no writable pwm*_enable found (fan-profile set requires root)" >&2
+            exit 1
+        }
+        ;;
+    status)
+        fan_status_json
+        ;;
+    *)
+        echo "unknown adapter command: $1" >&2
+        exit 2
+        ;;
+esac

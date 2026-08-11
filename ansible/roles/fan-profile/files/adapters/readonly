@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Backend: read-only fallback. Always detects; never sets. Fans and
+# temperatures stay visible through the common hwmon scan.
+set -euo pipefail
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/../lib/common.sh"
+
+case "${1:-}" in
+    detect)
+        exit 0
+        ;;
+    choices)
+        exit 0
+        ;;
+    get)
+        echo unsupported
+        ;;
+    set)
+        echo "this machine has no writable fan-policy interface" >&2
+        exit 3
+        ;;
+    status)
+        fan_status_json
+        ;;
+    *)
+        echo "unknown adapter command: $1" >&2
+        exit 2
+        ;;
+esac

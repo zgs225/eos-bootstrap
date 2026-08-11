@@ -1,0 +1,114 @@
+---
+# Fan/thermal profile control: framework + adapters + boot default.
+# UI (rofi menu, eww power-popup section) consumes `fan-profile status`.
+
+- name: Create fan-profile framework directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /usr/local/lib/fan-profile
+    - /usr/local/lib/fan-profile/lib
+    - /usr/local/lib/fan-profile/adapters
+  tags: [fan-profile]
+
+- name: Deploy fan-profile CLI
+  ansible.builtin.copy:
+    src: fan-profile
+    dest: /usr/local/lib/fan-profile/fan-profile
+    owner: root
+    group: root
+    mode: "0755"
+  tags: [fan-profile]
+
+- name: Deploy fan-profile shared library
+  ansible.builtin.copy:
+    src: lib/common.sh
+    dest: /usr/local/lib/fan-profile/lib/common.sh
+    owner: root
+    group: root
+    mode: "0644"
+  tags: [fan-profile]
+
+- name: Deploy fan-profile adapters
+  ansible.builtin.copy:
+    src: "adapters/{{ item }}"
+    dest: "/usr/local/lib/fan-profile/adapters/{{ item }}"
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - acpi-platform-profile
+    - asus-throttle
+    - thinkpad-fan
+    - hwmon-pwm
+    - readonly
+  tags: [fan-profile]
+
+- name: Link fan-profile into PATH
+  ansible.builtin.file:
+    src: /usr/local/lib/fan-profile/fan-profile
+    dest: /usr/local/bin/fan-profile
+    state: link
+    force: true
+  tags: [fan-profile]
+
+- name: Create /etc/fan-profile directory
+  ansible.builtin.file:
+    path: /etc/fan-profile
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  tags: [fan-profile]
+
+- name: Deploy boot default policy config
+  ansible.builtin.copy:
+    content: "quiet\n"
+    dest: /etc/fan-profile/default
+    owner: root
+    group: root
+    mode: "0644"
+  tags: [fan-profile]
+
+- name: Sudoers drop for fan-profile (NOPASSWD set)
+  ansible.builtin.copy:
+    content: "{{ target_user }} ALL=(root) NOPASSWD: /usr/local/lib/fan-profile/fan-profile\n"
+    dest: /etc/sudoers.d/fan-profile
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s"
+  tags: [fan-profile]
+
+- name: Deploy fan-profile boot service unit
+  ansible.builtin.copy:
+    src: fan-profile.service
+    dest: /etc/systemd/system/fan-profile.service
+    owner: root
+    group: root
+    mode: "0644"
+  tags: [fan-profile]
+
+- name: Deploy fan-profile resume service unit
+  ansible.builtin.copy:
+    src: fan-profile-resume.service
+    dest: /etc/systemd/system/fan-profile-resume.service
+    owner: root
+    group: root
+    mode: "0644"
+  tags: [fan-profile]
+
+- name: Enable and start fan-profile services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+  loop:
+    - fan-profile.service
+    - fan-profile-resume.service
+  tags: [fan-profile]

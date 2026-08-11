@@ -17,6 +17,7 @@
     - role: kernel
     - role: logging
     - role: power
+    - role: fan-profile
     - role: fingerprint
     - role: user
     - role: display
