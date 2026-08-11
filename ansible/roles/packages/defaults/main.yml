@@ -18,6 +18,7 @@ pacman_packages:
   - wget
   - git-lfs
   - jq
+  - tea # Gitea CLI (https://about.gitea.com/products/tea/)
   - go-yq
   - unzip
   - zip
