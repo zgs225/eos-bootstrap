@@ -191,6 +191,47 @@ no-ops without a datasource, qemu-guest-agent no-ops without the virtio
 4. Run `fcitx5-diagnose` and read the output.
 5. Open `fcitx5-configtool` to verify Pinyin is listed under "Available Input Methods" and ticked under "Current Input Methods".
 
+## Fingerprint stopped working after a libfprint upgrade
+
+Every pacman upgrade of `libfprint` restores the stock driver at
+`/usr/lib/libfprint-2.so.2.0.0`, wiping the FocalTech proprietary shim that the
+`fingerprint` role injects there. fprintd then reports "No devices available".
+
+1. Confirm the shim is gone:
+
+   ```bash
+   patchelf --print-needed /usr/lib/libfprint-2.so.2.0.0 | grep shim
+   ```
+
+   No output = driver lost.
+2. Re-inject the driver:
+
+   ```bash
+   sudo /usr/local/sbin/focaltech-restore-driver
+   # or: ansible-playbook ansible/playbook.yml --tags fingerprint
+   ```
+
+3. Verify: `fprintd-list $USER` lists a device again.
+
+The pacman hook `/etc/pacman.d/hooks/focaltech-libfprint-restore.hook`
+(deployed by the role) re-injects the driver automatically after every future
+libfprint upgrade, so this only matters if the hook itself was ever missing.
+
+## pacman refresh fails on the lizardbyte repo
+
+The `[lizardbyte]` repo (sunshine builds, configured in
+`/etc/pacman.d/lizardbyte.conf` by the packages role's `sunshine` task) fetches
+its database from github.com. When GitHub is unreachable, `pacman -Sy` fails on
+that one repo and aborts the whole play before later roles run.
+
+Workaround for urgent single packages:
+
+```bash
+pacman -S --needed <pkg>   # no refresh; the Arch mirrors' DBs usually sync fine
+```
+
+Then re-run the playbook once GitHub is reachable again.
+
 ## Configure keyd (system-wide key remapping)
 
 `keyd` runs as `keyd.service` (enabled in `core_services`) and reads its config from `/etc/keyd/default.conf`. The file is a Jinja2 template deployed by Ansible from `ansible/roles/packages/templates/keyd/default.conf.j2`. Re-running `./bootstrap.sh` (or `ansible-playbook ansible/playbook.yml`) hot-reloads via `keyd reload` (handler `Reload keyd`).
