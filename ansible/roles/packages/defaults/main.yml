@@ -235,6 +235,7 @@ aur_packages:
   - qqmusic-bin
   - buku
   - synology-drive-client
+  - jira-cli # ankitpokhrel/jira-cli, interactive Jira CLI (https://jira.yuez.me, local install)
 
 # Chong Xi Small Seal (崇羲篆體) — system-installed font
 # Vendored archive lives at roles/packages/files/chongxi_seal.zip; the
