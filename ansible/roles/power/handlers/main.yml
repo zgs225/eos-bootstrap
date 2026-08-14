@@ -5,7 +5,7 @@
     cmd: "tlp start"
   changed_when: false
 
-- name: Restart logind for lid debounce
+- name: Restart logind
   become: true
   ansible.builtin.systemd:
     name: systemd-logind

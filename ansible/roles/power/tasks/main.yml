@@ -65,7 +65,17 @@
     owner: root
     group: root
     mode: "0644"
-  notify: Restart logind for lid debounce
+  notify: Restart logind
+  tags: [power]
+
+- name: Deploy logind power key drop-in (tap ignored, 5s long press powers off)
+  ansible.builtin.copy:
+    src: logind-power-key.conf
+    dest: /etc/systemd/logind.conf.d/20-power-key.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart logind
   tags: [power]
 
 - name: Deploy lid-watchdog debounce script
