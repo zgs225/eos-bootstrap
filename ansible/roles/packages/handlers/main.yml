@@ -60,6 +60,15 @@
   changed_when: packages_keyd_reload.rc == 0
   failed_when: packages_keyd_reload.rc not in [0, 1]
 
+# keyd-application-mapper runs inside the i3 session (not a unit), so this
+# only kills it; the mapper must be restarted by the user afterwards
+# ("keyd-application-mapper -d" or next login) for script changes to apply.
+- name: Restart keyd-application-mapper
+  become: true
+  ansible.builtin.command: pkill -f keyd-application-mapper
+  changed_when: false
+  failed_when: false
+
 - name: Refresh font cache
   become: true
   ansible.builtin.command:

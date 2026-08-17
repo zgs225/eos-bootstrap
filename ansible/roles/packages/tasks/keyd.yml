@@ -26,3 +26,21 @@
     group: root
     mode: "0755"
   tags: [packages, keyd]
+
+# keyd-application-mapper ships inside the keyd package at /usr/bin, where a
+# pacman upgrade overwrites it. This patched copy lives in /usr/local/bin
+# (ahead of /usr/bin in PATH) and fixes the active-window detection:
+# upstream favours a _NET_WM_STATE_ABOVE floating window over the real X
+# input focus, so a PiP video / eww popup / any always-on-top window makes
+# the mapper push wrong per-app bindings and wezterm Alt+v / Alt+[ / Alt+]
+# silently stop working. After keyd upgrades, diff/port the fix forward:
+# diff -u /usr/bin/keyd-application-mapper /usr/local/bin/keyd-application-mapper
+- name: Deploy patched keyd-application-mapper (focus-following override)
+  ansible.builtin.copy:
+    src: keyd/keyd-application-mapper
+    dest: /usr/local/bin/keyd-application-mapper
+    owner: root
+    group: root
+    mode: "0755"
+  tags: [packages, keyd]
+  notify: Restart keyd-application-mapper
