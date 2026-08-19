@@ -34,6 +34,13 @@ w = C-w
 t = C-t
 z = C-z
 s = C-s
+# Pin [ / ] to plain Alt+[ / Alt+]. They are also defined in [alt+shift]
+# (leftbrace/rightbrace) and unbound in [alt], so keyd intermittently falls
+# through to [alt+shift] or swallows the key, breaking Alt+[ / Alt+] tab
+# switching in wezterm and other apps. Explicit bindings here are overridden
+# by higher-priority per-app bindings (e.g. chrome alt.[ = C-S-tab).
+[ = A-[
+] = A-]
 
 [alt+shift]
 v = A-S-v
