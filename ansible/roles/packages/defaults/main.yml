@@ -233,6 +233,7 @@ aur_packages:
   - pinentry-rofi # pinentry for rbw, themed by dotfiles wrapper
   - wemeet-bin
   - qqmusic-bin
+  - baidunetdisk-bin
   - buku
   - synology-drive-client
   - jira-cli # ankitpokhrel/jira-cli, interactive Jira CLI (https://jira.yuez.me, local install)
