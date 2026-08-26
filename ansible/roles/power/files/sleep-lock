@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Lock the X session before suspend (deployed by the eos-bootstrap power
+# role to /etc/systemd/system-sleep/50-lock).
+#
+# Why forward to the user systemd manager instead of launching the locker
+# here? systemd-suspend.service is Type=oneshot with the default
+# KillMode=control-group: anything this hook backgrounds into its own
+# cgroup (e.g. a bare `lock.sh &`) is SIGKILLed when the sleep cycle
+# completes on resume — the screen would come back unlocked. A user unit
+# (lock-on-suspend.service from the chezmoi dotfiles repo) lives in its
+# own cgroup under the session manager and survives across the sleep.
+#
+# The locker is started asynchronously: lock.sh blocks until unlock, and
+# the hook must return or systemd aborts the sleep cycle. Under a fast
+# suspend the freshly started i3lock may be frozen before it finishes
+# drawing; it completes its grab and redraws after resume, so the session
+# is locked whenever the machine comes back.
+set -euo pipefail
+
+case "${1:-}-${2:-}" in
+    pre-suspend|pre-hibernate|pre-hybrid-sleep|pre-suspend-then-hibernate) ;;
+    *) exit 0 ;;
+esac
+
+# First seat session that isn't a system/root one (single-user workstation).
+USER="$(loginctl list-sessions --no-legend 2>/dev/null \
+    | awk '$4 != "-" && $3 != "root" { print $3; exit }')"
+if [[ -z "$USER" ]]; then
+    logger -t lock-on-suspend "no graphical session found; skipping lock"
+    exit 0
+fi
+
+UID_NUM="$(id -u "$USER")"
+if ! runuser -u "$USER" -- \
+    env XDG_RUNTIME_DIR="/run/user/${UID_NUM}" \
+        DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${UID_NUM}/bus" \
+        systemctl --user start lock-on-suspend.service 2>/dev/null; then
+    logger -t lock-on-suspend \
+        "failed to start lock-on-suspend.service for ${USER} (dotfiles unit deployed?)"
+fi
+
+exit 0

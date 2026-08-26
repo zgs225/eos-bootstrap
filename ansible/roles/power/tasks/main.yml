@@ -104,3 +104,16 @@
     state: started
     daemon_reload: true
   tags: [power]
+
+# Lock-on-suspend: the system-sleep hook is the root half; it forwards to
+# the session's lock-on-suspend.service user unit (chezmoi dotfiles repo),
+# which has its own cgroup and survives the sleep — backgrounding the
+# locker from a hook does not, systemd-suspend.service KillMode cleans up.
+- name: Deploy lock-on-suspend system-sleep hook
+  ansible.builtin.copy:
+    src: sleep-lock
+    dest: /etc/systemd/system-sleep/50-lock
+    owner: root
+    group: root
+    mode: "0755"
+  tags: [power]
