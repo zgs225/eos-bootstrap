@@ -17,27 +17,42 @@
 # transition is logged so pulse durations stay measurable and the
 # threshold can be tuned.
 #
+# The switch is flaky in the other direction too: spurious OPEN pulses
+# while the lid is physically closed wake the machine from s2idle (ACPI
+# lid-open is a wakeup source). Two mechanisms handle that (2026-08-26):
+#  1. After a suspend returns with the lid still reading "closed", the
+#     next debounce is shortened to RESUSPEND_DEBOUNCE_SECS (2s) so a
+#     wake in a bag costs ~2s of awake time instead of 10s. A real lid
+#     open reads "open" and restores the full DEBOUNCE_SECS.
+#  2. Before requesting suspend, suspend.target is checked (active while
+#     a sleep operation is in flight). Skipping instead of racing avoids
+#     the "Action suspend already in progress" refusal noise that the
+#     watchdog used to generate against itself in the wake/resume window
+#     (every suspend request in 8 days of journal was lid-watchdog's own).
+#
 # If pulses longer than DEBOUNCE_SECS keep occurring (or the sensor
 # sticks closed), software cannot distinguish them from a real lid
 # close — that points at the sensor/switch hardware and needs an RMA.
 #
-# Implementation note (2026-08-26): the loop is pure bash — no subshells,
-# no external commands per iteration. The timer is `read -t` blocked on a
-# pipe that never delivers data (timer fd 9, fed by `tail -f /dev/null`,
-# which exits via --pid=$$ when the watchdog dies, even on SIGKILL), and
-# the clock is printf's builtin epoch format; the original sed/date/sleep
-# version forked three processes per poll and measured ~27 min CPU/day
-# (~1.8% of a core, 25 h service instance). Current cost is ~0.4% of a
-# core; on this laptop the residual is dominated by the per-poll /proc
-# open + bash interpreter overhead.
+# Implementation note: the loop is pure bash — no subshells, no external
+# commands per iteration except the suspend itself. The timer is `read -t`
+# blocked on a pipe that never delivers data (timer fd 9, fed by
+# `tail -f /dev/null`, which exits via --pid=$$ when the watchdog dies,
+# even on SIGKILL), and the clock is printf's builtin epoch format; the
+# original sed/date/sleep version forked three processes per poll and
+# measured ~27 min CPU/day (~1.8% of a core, 25 h service instance).
+# Current cost is ~0.4% of a core; the residual is dominated by the
+# per-poll /proc open + bash interpreter overhead.
 #
-# Overridable via env for testing: LID_STATE_FILE, SUSPEND_CMD,
-# DEBOUNCE_SECS, POLL_INTERVAL.
+# Overridable via env for testing: LID_STATE_FILE, SUSPEND_CMD, ACTIVE_CHECK,
+# DEBOUNCE_SECS, RESUSPEND_DEBOUNCE_SECS, POLL_INTERVAL.
 set -u
 
 LID_STATE_FILE="${LID_STATE_FILE:-/proc/acpi/button/lid/LID/state}"
 SUSPEND_CMD="${SUSPEND_CMD:-systemctl suspend}"
+ACTIVE_CHECK="${ACTIVE_CHECK:-systemctl is-active --quiet suspend.target}"
 DEBOUNCE_SECS="${DEBOUNCE_SECS:-10}"
+RESUSPEND_DEBOUNCE_SECS="${RESUSPEND_DEBOUNCE_SECS:-2}"
 POLL_INTERVAL="${POLL_INTERVAL:-1}"
 
 log() { logger -t lid-watchdog "$*"; }
@@ -48,6 +63,8 @@ exec 9< <(tail --pid=$$ -f /dev/null)
 
 last_state=""
 closed_since=0
+debounce_secs=$DEBOUNCE_SECS
+wait_logged=0
 line=""
 now=0
 
@@ -73,16 +90,38 @@ while :; do
     if [[ $state == closed ]]; then
         if (( closed_since == 0 )); then
             closed_since=$now
-        elif (( now - closed_since >= DEBOUNCE_SECS )); then
-            log "lid closed for >= ${DEBOUNCE_SECS}s, suspending"
-            # shellcheck disable=SC2086 # SUSPEND_CMD is an env-overridable command line
-            $SUSPEND_CMD || log "suspend command failed (rc=$?)"
-            # After a failed suspend the lid is still closed: restart the
-            # debounce so the next attempt fires in another DEBOUNCE_SECS.
-            closed_since=0
+        fi
+
+        if (( now - closed_since >= debounce_secs )); then
+            # Guard: a sleep operation may still be winding down (e.g. the
+            # spurious-open wake just returned). Do not race it — log once
+            # per episode and let the in-flight operation finish; the next
+            # poll fires as soon as it is gone.
+            # shellcheck disable=SC2086 # ACTIVE_CHECK is an env-overridable command line
+            if $ACTIVE_CHECK 2>/dev/null; then
+                if (( ! wait_logged )); then
+                    log "suspend already in progress, waiting"
+                    wait_logged=1
+                fi
+            else
+                wait_logged=0
+                log "lid closed for >= ${debounce_secs}s, suspending"
+                closed_since=0
+                # shellcheck disable=SC2086 # SUSPEND_CMD is an env-overridable command line
+                if $SUSPEND_CMD; then
+                    # Suspend completed (machine woke). If the lid still
+                    # reads closed this was a spurious open-pulse wake in
+                    # e.g. a bag: re-suspend on the short timer so the
+                    # awake window stays ~2s. A real open resets below.
+                    debounce_secs=$RESUSPEND_DEBOUNCE_SECS
+                else
+                    log "suspend command failed (rc=$?)"
+                fi
+            fi
         fi
     else
         closed_since=0
+        debounce_secs=$DEBOUNCE_SECS
     fi
 
     # Fork-free sleep: blocks POLL_INTERVAL then times out (rc 142).
