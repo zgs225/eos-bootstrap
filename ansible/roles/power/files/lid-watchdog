@@ -24,11 +24,13 @@
 #     next debounce is shortened to RESUSPEND_DEBOUNCE_SECS (2s) so a
 #     wake in a bag costs ~2s of awake time instead of 10s. A real lid
 #     open reads "open" and restores the full DEBOUNCE_SECS.
-#  2. Before requesting suspend, suspend.target is checked (active while
-#     a sleep operation is in flight). Skipping instead of racing avoids
-#     the "Action suspend already in progress" refusal noise that the
-#     watchdog used to generate against itself in the wake/resume window
-#     (every suspend request in 8 days of journal was lid-watchdog's own).
+#  2. Before requesting suspend, sleep.target is checked (active for the
+#     whole systemd-sleep oneshot, including a hung nvidia/s2idle path).
+#     Skipping instead of racing avoids the "Action suspend already in
+#     progress" refusal storm observed 2026-08-27 when suspend.target
+#     was used — that target only flips active *after* systemd-suspend
+#     finishes, so a wedged sleep looked "idle" and the watchdog
+#     re-issued systemctl suspend every 3s.
 #
 # If pulses longer than DEBOUNCE_SECS keep occurring (or the sensor
 # sticks closed), software cannot distinguish them from a real lid
@@ -50,7 +52,10 @@ set -u
 
 LID_STATE_FILE="${LID_STATE_FILE:-/proc/acpi/button/lid/LID/state}"
 SUSPEND_CMD="${SUSPEND_CMD:-systemctl suspend}"
-ACTIVE_CHECK="${ACTIVE_CHECK:-systemctl is-active --quiet suspend.target}"
+# sleep.target stays active for the entire systemd-sleep oneshot (including
+# hangs). suspend.target only becomes active after a successful finish —
+# do not use it here.
+ACTIVE_CHECK="${ACTIVE_CHECK:-systemctl is-active --quiet sleep.target}"
 DEBOUNCE_SECS="${DEBOUNCE_SECS:-10}"
 RESUSPEND_DEBOUNCE_SECS="${RESUSPEND_DEBOUNCE_SECS:-2}"
 POLL_INTERVAL="${POLL_INTERVAL:-1}"
@@ -93,10 +98,10 @@ while :; do
         fi
 
         if (( now - closed_since >= debounce_secs )); then
-            # Guard: a sleep operation may still be winding down (e.g. the
-            # spurious-open wake just returned). Do not race it — log once
-            # per episode and let the in-flight operation finish; the next
-            # poll fires as soon as it is gone.
+            # Guard: a sleep operation may still be in flight (or wedged
+            # inside systemd-suspend). Do not race it — log once per
+            # episode and let the in-flight operation finish; the next
+            # poll fires as soon as sleep.target drops.
             # shellcheck disable=SC2086 # ACTIVE_CHECK is an env-overridable command line
             if $ACTIVE_CHECK 2>/dev/null; then
                 if (( ! wait_logged )); then

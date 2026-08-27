@@ -85,6 +85,7 @@
     owner: root
     group: root
     mode: "0755"
+  notify: Restart lid-watchdog
   tags: [power]
 
 - name: Deploy lid-watchdog service unit
@@ -117,3 +118,33 @@
     group: root
     mode: "0755"
   tags: [power]
+
+# NVIDIA open + platform s2idle: enable GPU S0ix so lid-close suspend does
+# not hang in nvidia-modeset waiting for GPU progress. Takes effect on
+# next nvidia module load (reboot). Gated on NVIDIA PCI device presence.
+- name: Detect NVIDIA GPU via lspci
+  ansible.builtin.shell: |
+    set -o pipefail
+    lspci -nn 2>/dev/null | grep -qiE '\[(0300|0302)\].*(10de|NVIDIA)'
+  register: power_nvidia_hw_check
+  changed_when: false
+  failed_when: power_nvidia_hw_check.rc not in [0, 1]
+  check_mode: false
+  tags: [power, nvidia-s0ix]
+
+- name: Deploy nvidia S0ix modprobe drop-in
+  ansible.builtin.copy:
+    src: nvidia-s0ix.conf
+    dest: /etc/modprobe.d/nvidia-s0ix.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: power_nvidia_hw_check.rc == 0
+  tags: [power, nvidia-s0ix]
+
+- name: Remove nvidia S0ix modprobe drop-in when no NVIDIA GPU
+  ansible.builtin.file:
+    path: /etc/modprobe.d/nvidia-s0ix.conf
+    state: absent
+  when: power_nvidia_hw_check.rc != 0
+  tags: [power, nvidia-s0ix]
