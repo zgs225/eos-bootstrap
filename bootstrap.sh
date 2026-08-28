@@ -37,7 +37,6 @@ setup_proxy() {
 
 setup_proxy
 
-# Resolve DOTFILES_REPO and DOTFILES_BRANCH from group_vars/all.yml.
 DOTFILES_REPO=""
 DOTFILES_BRANCH=""
 DOTFILES_USE_ENCRYPTION="false"
@@ -57,7 +56,6 @@ if [[ -z "${DOTFILES_REPO}" ]]; then
   die "dotfiles_repo not set in ${GROUP_VARS}"
 fi
 
-# ---------- 1. Base packages via pacman ----------
 log "Ensuring base packages (git, base-devel, ansible)"
 for pkg in git base-devel ansible; do
   if ! pacman -Qq "$pkg" &>/dev/null; then
@@ -65,7 +63,6 @@ for pkg in git base-devel ansible; do
   fi
 done
 
-# ---------- 2. AUR helper (paru) ----------
 if ! command -v paru >/dev/null 2>&1; then
   log "Installing paru from AUR"
   tmp="$(mktemp -d)"
@@ -78,11 +75,9 @@ else
   log "paru already installed"
 fi
 
-# ---------- 3. Ansible playbook ----------
 log "Running Ansible playbook"
 ansible-playbook "${ANSIBLE_DIR}/playbook.yml" --ask-become-pass
 
-# ---------- 4. Install chezmoi ----------
 if ! command -v chezmoi >/dev/null 2>&1; then
   log "Installing chezmoi"
   if pacman -Si chezmoi &>/dev/null; then
@@ -94,7 +89,6 @@ else
   log "chezmoi already installed"
 fi
 
-# ---------- 5. Apply dotfiles ----------
 if [[ "${DOTFILES_USE_ENCRYPTION}" == "true" ]]; then
   key_ok=0
   if [[ -n "${AGE_KEY_FILE:-}" && -s "${AGE_KEY_FILE}" ]]; then

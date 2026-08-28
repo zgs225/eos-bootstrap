@@ -1,8 +1,5 @@
 ---
-# FocalTech FT9366 fingerprint sensor (2808:a658) via proprietary TOD driver.
-# Entire role is a no-op when the USB device is absent.
-# Heavy steps (pacman, git clone, compile, patchelf) are skipped when the
-# driver stack is already deployed.
+# No-op when the USB device is absent.
 
 - name: Detect FocalTech FT9366 fingerprint sensor via lsusb
   ansible.builtin.shell: |
@@ -179,19 +176,7 @@
       notify: Restart fprintd
 
     - name: Deploy PAM config for i3lock (stock, password-only)
-      # Fingerprint unlock on the lock screen was REMOVED 2026-08-07.
-      #
-      # History (2026-08-06): the PAM approach itself is sound — we built and
-      # verified a custom stack (password instant via [success=done], bounded
-      # fingerprint window as fallback, faillock bookkeeping). Password unlock
-      # measured 378ms. But on THIS hardware the FT9366 + TOD driver wedges
-      # permanently: after ~2 verify cycles fprintd floods "abnormality
-      # interrup flag" and captures nothing. Neither fprintd restarts, USB
-      # unbind/bind, xHCI resets, a real S3 suspend, nor an overnight rest
-      # healed it. So the sensor is unusable for daily unlock here and the
-      # stack is reverted to stock password-only (still file-deployed so
-      # drift self-heals). focaltech-recover + the resume hook are kept in
-      # case the wedge recurs for sudo/polkit fingerprint use.
+      # Lock-screen fingerprint removed: FT9366 wedges permanently after ~2 verify cycles on this hardware.
       ansible.builtin.copy:
         src: i3lock-pam
         dest: /etc/pam.d/i3lock
@@ -200,17 +185,12 @@
         mode: "0644"
 
     - name: Remove fingerprint-era faillock tuning (restore distro defaults)
-      # faillock.conf was only tuned for fingerprint-primary unlock; with the
-      # lock screen back to password-only the distro defaults are correct.
       ansible.builtin.file:
         path: /etc/security/faillock.conf
         state: absent
 
     - name: Deploy PAM config for polkit (fingerprint in polkit prompts)
-      # /etc/pam.d/polkit-1 does not exist by default (factory config lives in
-      # /usr/lib/pam.d/polkit-1), so a full file is deployed instead of
-      # lineinfile — required for Bitwarden "Unlock with system
-      # authentication" and any other polkit-based fingerprint prompt.
+      # /etc/pam.d/polkit-1 does not exist by default; deploy a full file, not lineinfile.
       ansible.builtin.copy:
         src: polkit-1
         dest: /etc/pam.d/polkit-1

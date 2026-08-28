@@ -4,6 +4,4 @@
     name: mise
     state: present
 
-# Note: Tool versions are NOT installed here. They are declared in
-# ~/.config/mise/config.toml (managed by chezmoi), and `mise install`
-# runs from a `run_once_after_*` script in the dotfiles repo.
+# Tool versions live in ~/.config/mise/config.toml (chezmoi); `mise install` runs from dotfiles.

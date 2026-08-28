@@ -1,14 +1,9 @@
 ---
-# Defaults for the packages role. Loaded automatically into the role's
-# variable scope and may be overridden by group_vars/all.yml or
-# --extra-vars.
-#
 # The vars/ directory is intentionally NOT used for these lists: Ansible
 # only auto-loads vars/main.yml from a role, not sibling files like
-# vars/pacman_packages.yml. See the design spec for the rationale.
+# vars/pacman_packages.yml.
 
 pacman_packages:
-  # Base
   - sudo
   - vim
   - curl
@@ -18,7 +13,7 @@ pacman_packages:
   - wget
   - git-lfs
   - jq
-  - tea # Gitea CLI (https://about.gitea.com/products/tea/)
+  - tea  # Gitea CLI (https://about.gitea.com/products/tea/)
   - go-yq
   - unzip
   - zip
@@ -36,33 +31,26 @@ pacman_packages:
   - powertop
   - tlp
   - tlp-pd
-  # Filesystem support (Windows)
   - ntfs-3g
   - exfatprogs
   - dosfstools
-  # Networking
   - networkmanager
   - network-manager-applet
   - nm-connection-editor
   - tailscale
-  # Xorg / X11 (LightDM + i3; startx kept as fallback)
   - xorg-server
   - xorg-xinit
-  # Display manager (LightDM greeter → PAM keyring unlock)
   - lightdm
   - lightdm-gtk-greeter
   - xorg-xinput
   - xorg-xwininfo
-  - xorg-server-xvfb # headless render harness for greeter UI acceptance (greeter-preview)
+  - xorg-server-xvfb  # greeter-preview headless render harness
   - xclip
   - wmctrl
   - xdotool
-  # GPU drivers and diagnostics (Intel / virtio / modesetting)
   - mesa
   - mesa-utils
-  # VNC server for sharing :0 (xrdp VNC backend)
   - tigervnc
-  # i3wm ecosystem
   - i3-wm
   - i3status
   - polybar
@@ -74,17 +62,13 @@ pacman_packages:
   - lxappearance
   - pamixer
   - brightnessctl
-  # Keyboard remapping (kernel evdev/uinput daemon, sub-1ms latency)
-  # python-xlib is required by keyd-application-mapper for X11 window-class detection.
   - keyd
-  - python-xlib
-  # Audio
+  - python-xlib  # keyd-application-mapper X11 window-class detection
   - pipewire
   - pipewire-alsa
   - pipewire-pulse
   - wireplumber
   - rtkit
-  # Theming
   - gtk3
   - gtk4
   - papirus-icon-theme
@@ -96,13 +80,11 @@ pacman_packages:
   - adobe-source-han-serif-cn-fonts
   - kvantum
   - kvantum-qt5
-  # Input method (Chinese pinyin via fcitx5)
   - fcitx5
   - fcitx5-chinese-addons
   - fcitx5-gtk
   - fcitx5-qt
   - fcitx5-configtool
-  # Development
   - git
   - github-cli
   - base-devel
@@ -118,79 +100,62 @@ pacman_packages:
   - bat
   - eza
   - yazi
-  # yazi preview backends: video thumbnails, sixel/ascii fallback
-  # (PDF preview needs pdftoppm, already in `poppler` above)
-  - ffmpegthumbnailer
+  - ffmpegthumbnailer  # yazi video preview; PDF uses poppler above
   - chafa
   - zoxide
-  # Shell
   - zsh
   - zsh-completions
   - zsh-syntax-highlighting
-  # Editors
   - neovim
   - tree-sitter-cli
-  # Terminal
   - wezterm
   - tmux
-  # Mise prerequisites
   - mise
   - maim
-  # Region GIF recording (screenrecord.sh, i3 $mod+Shift+5)
   - gpu-screen-recorder
   - slop
   - code
   - tesseract
   - tesseract-data-eng
   - tesseract-data-chi_sim
-  # Dotfile encryption (chezmoi age backend)
   - age
-  # Containers
   - docker
   - docker-buildx
   - docker-compose
-  # Kubernetes operations
   - kubectl
   - helm
   - helmfile
-  - kubectx # includes kubens
+  - kubectx
   - k9s
-  - argocd # ArgoCD CLI client
+  - argocd
   - kustomize
-  - stern # multi-pod log tailing
-  - krew # kubectl plugin manager
+  - stern
+  - krew
   - kubectl-cert-manager
   - kubectl-ingress-nginx
-  - kubeseal # sealed-secrets client
-  - kubeconform # manifest schema validation
-  - kube-linter # manifest static analysis
-  - popeye # live-cluster resource sanitizer
-  - kompose # docker-compose -> k8s manifests
-  # Kubernetes local clusters
+  - kubeseal
+  - kubeconform
+  - kube-linter
+  - popeye
+  - kompose
   - minikube
   - kind
-  # Kubernetes GitOps / backup / CNI ops
   - argocd
   - velero
   - cilium-cli
-  # Desktop Apps
   - bitwarden
-  - rbw # Bitwarden CLI (rbw-agent; rofi launcher bw module in dotfiles)
-  - polkit-gnome # polkit auth agent (GUI prompts; autostarted from i3 config in dotfiles)
+  - rbw
+  - polkit-gnome
   - zathura
   - zathura-pdf-poppler
   - mpv
   - nsxiv
   - satty
 
-# Packages that must NOT be installed via pacman because mise owns them.
-# The pacman `go` package upgrades independently of mise and its GOROOT
-# clashes with mise's Go toolchain ("compile: version go1.X does not match
-# go tool version go1.Y"), so it is actively removed on every run.
+# pacman `go` clashes with mise's Go toolchain; actively removed on every run.
 packages_pacman_absent:
   - go
 
-# Thunar file manager and extensions (X11 + i3wm default)
 thunar_packages:
   - thunar
   - thunar-volman
@@ -204,10 +169,6 @@ thunar_packages:
   - tumbler
   - xarchiver
 
-# Cloud / VM guests (Proxmox, QEMU/KVM)
-# Only installed when running inside a VM (auto-detected via
-# ansible_virtualization_type). Service enablement is controlled by
-# `vm_services` in group_vars/all.yml.
 vm_pacman_packages:
   - cloud-init
   - qemu-guest-agent
@@ -230,20 +191,15 @@ aur_packages:
   - ttf-lxgw-wenkai
   - eww
   - rofi-greenclip
-  - pinentry-rofi # pinentry for rbw, themed by dotfiles wrapper
+  - pinentry-rofi
   - wemeet-bin
   - qqmusic-bin
   - baidunetdisk-bin
   - buku
   - synology-drive-client
-  - jira-cli # ankitpokhrel/jira-cli, interactive Jira CLI (https://jira.yuez.me, local install)
+  - jira-cli
+  - cypher-shell
 
-# Chong Xi Small Seal (崇羲篆體) — system-installed font
-# Vendored archive lives at roles/packages/files/chongxi_seal.zip; the
-# task file extracts it idempotently into chongxi_seal_install_dir and
-# triggers the `Refresh font cache` handler. The URL and SHA-256 are
-# recorded here so the vendored asset can be re-verified or replaced
-# without code changes elsewhere.
 chongxi_seal_zip_name: chongxi_seal.zip
 chongxi_seal_otf_name: chongxi_seal.otf
 chongxi_seal_install_dir: /usr/local/share/fonts/chongxi

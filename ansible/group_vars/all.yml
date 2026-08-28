@@ -1,14 +1,10 @@
 ---
-# Coarse-layer variables. Edits here are part of the machine's identity.
-
-# The user this machine is being bootstrapped for.
-# Hardcoded username — become:true makes ansible_facts.user_id return root.
+# become:true makes ansible_facts.user_id return root;
+# target_user is hardcoded.
 target_user: "yuez"
 
-# User groups target_user should be added to.
-# `keyd` is required for keyd-application-mapper to reach /run/keyd.socket.
-# After the first bootstrap, the user must re-login once for the new
-# group to be effective in their session.
+# keyd group membership requires a re-login before
+# keyd-application-mapper works.
 user_groups:
   - wheel
   - docker
@@ -20,14 +16,8 @@ user_groups:
   - tty
   - keyd
 
-# Services to enable in addition to core_services. Empty by default.
 optional_services: []
 
-# Services relevant only in VM guests (Proxmox, QEMU/KVM, etc.).
-# VM detection is automatic (ansible_virtualization_type). When running on
-# bare metal, cloud-init/qemu-guest-agent services are disabled and packages
-# removed. When in a VM, these services are enabled and started.
-# Adjust the list to match your VM environment's needs.
 vm_services:
   - cloud-init-local.service
   - cloud-init-main.service
@@ -35,38 +25,20 @@ vm_services:
   - cloud-config.service
   - cloud-final.service
   - qemu-guest-agent.service
-# Common examples for a Proxmox/QEMU guest:
-#   - cloud-init-local.service
-#   - cloud-init-main.service
-#   - cloud-init-network.service
-#   - cloud-config.service
-#   - cloud-final.service
-#   - qemu-guest-agent.service
 
-# URL of the dotfiles repo (consumed by bootstrap.sh, not by Ansible).
+# Consumed by bootstrap.sh, not Ansible.
 dotfiles_repo: "https://github.com/zgs225/dotfiles.git"
 
-# Branch of the dotfiles repo to clone on first init.
-# Leave empty to use the remote's default branch.
 dotfiles_branch: "master"
 
-# Set to true when the dotfiles repo contains age-encrypted files.
-# bootstrap.sh will refuse to run unless an age identity is present at
+# bootstrap.sh dies without an age identity at
 # ~/.config/chezmoi/key.txt (or $AGE_KEY_FILE).
 dotfiles_use_encryption: true
 
-# tty1 autologin → startx → i3 chain on :0.
-# Must be true for xrdp VNC backend — x0vncserver shares :0 over VNC.
+# xrdp VNC backend shares :0; autologin must be on for that chain.
 display_autologin_enabled: false
 
-# Display manager backend: "lightdm" or "none".
-# - lightdm: LightDM greeter (password login, PAM keyring unlock).
-# - none:    getty autologin → startx → i3 (legacy, no keyring unlock).
-# Requires display_autologin_enabled: true for autologin in either path.
 display_manager: lightdm
 
-# xrdp remote desktop (VNC backend, shares :0 display).
-# Set to true to enable xrdp (RDP) + x0vncserver (VNC sharing :0).
 # xrdp-sesman is disabled; no separate X sessions.
-# Package tigervnc provides x0vncserver; xrdp provides RDP listener.
 xrdp_enabled: true

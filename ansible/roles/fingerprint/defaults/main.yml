@@ -1,7 +1,4 @@
 ---
-# FocalTech FT9366 fingerprint sensor (Realtek RTS5811 USB bridge).
-# Only activates when the matching USB device is present.
-
 fingerprint_usb_vid: "2808"
 fingerprint_usb_pid: "a658"
 

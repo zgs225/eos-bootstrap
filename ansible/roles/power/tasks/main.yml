@@ -1,6 +1,4 @@
 ---
-# Power management via TLP (profiles require TLP >= 1.9).
-
 - name: Read installed TLP version
   ansible.builtin.command:
     cmd: "tlp --version"

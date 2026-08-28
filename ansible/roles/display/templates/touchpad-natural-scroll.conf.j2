@@ -1,7 +1,5 @@
 # Managed by Ansible — do not edit by hand.
-# macOS-style natural scrolling for all touchpads.
-# Applied by Xorg on every device add, so it survives suspend/resume
-# hotplug (unlike a runtime `xinput set-prop` approach).
+# Survives suspend/resume hotplug (unlike runtime `xinput set-prop`).
 Section "InputClass"
     Identifier "touchpad-natural-scroll"
     MatchIsTouchpad "on"

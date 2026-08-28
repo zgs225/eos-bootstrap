@@ -1,7 +1,4 @@
 ---
-# Fan/thermal profile control: framework + adapters + boot default.
-# UI (rofi menu, eww power-popup section) consumes `fan-profile status`.
-
 - name: Create fan-profile framework directories
   ansible.builtin.file:
     path: "{{ item }}"

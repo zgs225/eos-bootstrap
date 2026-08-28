@@ -1,27 +1,11 @@
 # {{ ansible_managed }}
-# System-wide keyd remapping. i3's $mod is Alt (set in dotfiles
-# repo's ~/.config/i3/config via `set $mod Mod1`); this layer makes
-# Alt also the "GUI shortcut" key so Alt+c/v/x/a -> Ctrl+c/v/x/a.
-#
-# Layer `alt` is modifier-aware: any key NOT explicitly bound here
-# is automatically passed through with the Alt modifier attached.
-# This means every existing i3 $mod binding (e.g. $mod+Enter, $mod+Shift+q)
-# keeps working untouched -- only c/v/x/a on the alt layer are intercepted.
-#
-# Per-application overrides (e.g. wezterm keeping native Alt+c/v)
-# live in the dotfiles repo at ~/.config/keyd/app.conf and are applied
-# by keyd-application-mapper at runtime -- they do NOT live here.
-#
-# NOTE: rebinding rightalt overrides the upstream default of layer(altgr),
-# so right-Alt international character entry (e.g. AltGr+E for EUR on
-# European layouts) will no longer work. Acceptable here because CJK
-# input goes through fcitx5.
+# Per-app overrides live in ~/.config/keyd/app.conf (dotfiles repo), not here.
+# rightalt=layer(alt) overrides upstream altgr; AltGr character entry will not work (fcitx5 handles CJK).
 
 [ids]
 *
 
 [main]
-# Make both Alt keys enter the alt layer (overrides upstream rightalt=altgr).
 leftalt  = layer(alt)
 rightalt = layer(alt)
 
@@ -34,11 +18,7 @@ w = C-w
 t = C-t
 z = C-z
 s = C-s
-# Pin [ / ] to plain Alt+[ / Alt+]. They are also defined in [alt+shift]
-# (leftbrace/rightbrace) and unbound in [alt], so keyd intermittently falls
-# through to [alt+shift] or swallows the key, breaking Alt+[ / Alt+] tab
-# switching in wezterm and other apps. Explicit bindings here are overridden
-# by higher-priority per-app bindings (e.g. chrome alt.[ = C-S-tab).
+# [ / ] also exist in [alt+shift]; without explicit bindings keyd intermittently swallows Alt+[ / Alt+].
 [ = A-[
 ] = A-]
 

@@ -1,11 +1,8 @@
 ---
-# journald retention. Total journal size is capped and archives are
-# compressed; entries older than the retention window are dropped.
 logging_journald_dropin: /etc/systemd/journald.conf.d/10-eos.conf
 logging_journald_system_max_use_mb: 200
 logging_journald_max_retention: 1month
 logging_journald_compress: true
 
-# logrotate: compress rotated files (global option in /etc/logrotate.conf).
 logging_logrotate_compress: true
 logging_logrotate_timer: logrotate.timer

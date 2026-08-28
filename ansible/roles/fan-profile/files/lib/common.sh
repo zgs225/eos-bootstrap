@@ -1,10 +1,3 @@
-# fan-profile shared helpers (sourced by the CLI and every adapter).
-# Keep this file ASCII-only and POSIX-friendly where cheap.
-
-# --- policy vocabulary ------------------------------------------------------
-
-# Map vendor aliases onto the canonical vocabulary. Unknown tokens pass
-# through unchanged.
 normalize() {
     case "${1:-}" in
         quiet | silent | low-power | low_power | power-saver | powersave) echo quiet ;;
@@ -14,8 +7,6 @@ normalize() {
     esac
 }
 
-# Pick the adapter-native choice that matches the requested policy, with a
-# fallback ladder (quiet -> balanced -> performance -> first available).
 resolve_choice() {
     local want c
     want=$(normalize "${1:-}")
@@ -38,10 +29,6 @@ resolve_choice() {
     echo "$c"
 }
 
-# --- hwmon scan ---------------------------------------------------------------
-
-# Print one line per fan: "name<TAB>rpm". Names derive from fan*_label
-# when present ("cpu_fan" -> "cpu"), else fan1/fan2.
 hwmon_fans() {
     local hw f rpm label name
     for hw in /sys/class/hwmon/hwmon*; do
@@ -67,7 +54,6 @@ hwmon_fans() {
     done
 }
 
-# Package (CPU) temperature in C; 0 when unavailable.
 pkg_temp() {
     local t= label f
     for f in /sys/class/hwmon/hwmon*/temp*_input; do
@@ -90,13 +76,10 @@ pkg_temp() {
     printf '%d' $((t / 1000))
 }
 
-# --- JSON helpers --------------------------------------------------------------
-
 json_str() {
     printf '"%s"' "$(printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g')"
 }
 
-# Emit the fans array body: {"name":"cpu","rpm":2300},{"name":"gpu","rpm":0}
 fan_status_json() {
     local line name rpm out first
     out=

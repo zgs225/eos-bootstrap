@@ -1,5 +1,4 @@
 ---
-# --- Getty autologin (legacy: getty → startx → i3) ---
 - name: Remove getty autologin override
   when: >-
     not (display_autologin_enabled | default(true))
@@ -24,7 +23,6 @@
       tags: [display, autologin]
   tags: [display, autologin]
 
-# --- LightDM ---
 - name: Configure LightDM
   when: (display_manager | default('none')) == 'lightdm'
   ansible.builtin.include_tasks:
@@ -33,7 +31,6 @@
       tags: [display, lightdm]
   tags: [display, lightdm]
 
-# --- Touchpad ---
 - name: Configure touchpad
   ansible.builtin.include_tasks:
     file: touchpad.yml

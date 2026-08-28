@@ -59,6 +59,7 @@ tests/idempotency.sh
 - The `aur` task uses `changed_when: false` and `check_mode: false` — its idempotency is enforced by `paru --needed`, not by Ansible's change detection.
 - The `bluetooth` task uses `failed_when: rc not in [0, 1]` — detection must not error when hardware is absent.
 - The `sudoers` drop validates with `visudo -cf %s` before writing.
+- **Comments: add sparingly.** Code should be self-explanatory; only add a comment when it conveys non-obvious intent, constraints, or gotchas that the code cannot express. When needed, keep it to the minimum — no narrating what the code already says.
 
 ## Gotchas an agent would otherwise miss
 
