@@ -1,0 +1,24 @@
+---
+# sched-ext (scx_loader) configuration.
+# scx_lavd: latency-aware BPF scheduler, boosts interactive tasks (Xorg/picom
+# input path) over CPU-bound bulk work. Loaded by scx_loader.service at boot;
+# switch schedulers by editing config.toml and restarting the service.
+
+- name: Ensure /etc/scx_loader exists
+  ansible.builtin.file:
+    path: /etc/scx_loader
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  tags: [packages, scx]
+
+- name: Deploy scx_loader default scheduler config
+  ansible.builtin.template:
+    src: scx_loader/config.toml.j2
+    dest: /etc/scx_loader/config.toml
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart scx_loader
+  tags: [packages, scx]

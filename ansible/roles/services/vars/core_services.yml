@@ -10,5 +10,7 @@ core_services:
   - rtkit-daemon.service
   - sshd.service
   - tailscaled.service
+  - scx_loader.service  # sched-ext BPF scheduler loaded at boot
+  - irqbalance.service  # distribute hardware IRQs across CPU cores
   - tlp.service
   - tlp-pd.service

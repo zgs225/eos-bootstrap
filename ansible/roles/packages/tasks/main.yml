@@ -66,6 +66,13 @@
       tags: [packages, keyd]
   tags: [packages, keyd]
 
+- name: Configure sched-ext scheduler (scx_loader)
+  ansible.builtin.include_tasks:
+    file: scx.yml
+    apply:
+      tags: [packages, scx]
+  tags: [packages, scx]
+
 - name: Configure libinput quirks
   ansible.builtin.include_tasks:
     file: libinput.yml

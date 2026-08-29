@@ -151,6 +151,9 @@ pacman_packages:
   - mpv
   - nsxiv
   - satty
+  - scx-scheds  # sched-ext BPF schedulers (scx_lavd / scx_rusty / ...)
+  - scx-tools   # scx_loader: DBus-managed systemd service for sched-ext
+  - irqbalance  # spread hardware interrupts across cores
 
 # pacman `go` clashes with mise's Go toolchain; actively removed on every run.
 packages_pacman_absent:
