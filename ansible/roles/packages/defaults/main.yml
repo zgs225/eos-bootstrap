@@ -94,6 +94,7 @@ pacman_packages:
   - linux-headers
   - openssh
   - rsync
+  - rclone  # S3-compatible client: sync/mount to MinIO/Ceph/R2
   - ripgrep
   - fd
   - fzf
