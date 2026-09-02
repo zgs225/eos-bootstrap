@@ -24,3 +24,10 @@
     name: lid-watchdog.service
     state: restarted
   tags: [power]
+
+- name: Rebuild initramfs (power)
+  become: true
+  ansible.builtin.command:
+    cmd: "dracut --regenerate-all --force"
+  changed_when: false
+  tags: [power]

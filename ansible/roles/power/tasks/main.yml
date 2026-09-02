@@ -120,6 +120,18 @@
 # NVIDIA open + platform s2idle: enable GPU S0ix so lid-close suspend does
 # not hang in nvidia-modeset waiting for GPU progress. Takes effect on
 # next nvidia module load (reboot). Gated on NVIDIA PCI device presence.
+#
+# 2026-09-02 fix: nvidia is force-loaded from the initramfs (dracut
+# force_drivers + hostonly image), so module options only take effect if they
+# are inside the initramfs at build time. The 2026-08-27 fix added
+# /etc/modprobe.d/nvidia-s0ix.conf but never rebuilt the initramfs (image was
+# from 2026-08-23), so the option never reached the module. The tasks below
+# therefore (1) mirror the modprobe drop-in into the initramfs explicitly via
+# a dracut install_items conf and (2) notify an initramfs rebuild. hostonly
+# dracut would pack /etc/modprobe.d/*.conf on its own, but install_items
+# keeps the intent explicit and survives a switch to non-hostonly builds.
+# Verified broken 2026-09-02: /proc/driver/nvidia/params showed
+# EnableS0ixPowerManagement=0 although /etc/modprobe.d/nvidia-s0ix.conf said 1.
 - name: Detect NVIDIA GPU via lspci
   ansible.builtin.shell: |
     set -o pipefail
@@ -143,6 +155,33 @@
 - name: Remove nvidia S0ix modprobe drop-in when no NVIDIA GPU
   ansible.builtin.file:
     path: /etc/modprobe.d/nvidia-s0ix.conf
+    state: absent
+  when: power_nvidia_hw_check.rc != 0
+  tags: [power, nvidia-s0ix]
+
+# dracut packs /usr/lib/modprobe.d but NOT /etc/modprobe.d into the initramfs.
+# Because this host force-loads nvidia in the initramfs (force_drivers), the
+# S0ix/RTD3 options must be carried inside the initramfs too. install_items
+# copies the file to the same absolute path in the image; dracut's modprobe
+# module then applies it when force_drivers modprobes nvidia.
+- name: Deploy dracut install_items conf for nvidia modprobe drop-in
+  ansible.builtin.copy:
+    dest: /etc/dracut.conf.d/nvidia-s0ix.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      # Managed by Ansible (eos-bootstrap, roles/power). Manual edits will be overwritten.
+      # Ship /etc/modprobe.d/nvidia-s0ix.conf inside the initramfs so the
+      # early-loaded nvidia module (force_drivers) gets its options.
+      install_items+=" /etc/modprobe.d/nvidia-s0ix.conf "
+  when: power_nvidia_hw_check.rc == 0
+  notify: Rebuild initramfs (power)
+  tags: [power, nvidia-s0ix]
+
+- name: Remove dracut install_items conf when no NVIDIA GPU
+  ansible.builtin.file:
+    path: /etc/dracut.conf.d/nvidia-s0ix.conf
     state: absent
   when: power_nvidia_hw_check.rc != 0
   tags: [power, nvidia-s0ix]
