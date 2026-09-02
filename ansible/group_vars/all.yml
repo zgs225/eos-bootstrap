@@ -15,6 +15,7 @@ user_groups:
   - audio
   - tty
   - keyd
+  - plugdev
 
 optional_services: []
 
