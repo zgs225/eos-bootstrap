@@ -13,7 +13,8 @@ pacman_packages:
   - wget
   - git-lfs
   - jq
-  - tea  # Gitea CLI (https://about.gitea.com/products/tea/)
+  - tea
+  - glab
   - go-yq
   - unzip
   - zip
@@ -44,7 +45,7 @@ pacman_packages:
   - lightdm-gtk-greeter
   - xorg-xinput
   - xorg-xwininfo
-  - xorg-server-xvfb  # greeter-preview headless render harness
+  - xorg-server-xvfb # greeter-preview headless render harness
   - xclip
   - wmctrl
   - xdotool
@@ -63,7 +64,7 @@ pacman_packages:
   - pamixer
   - brightnessctl
   - keyd
-  - python-xlib  # keyd-application-mapper X11 window-class detection
+  - python-xlib # keyd-application-mapper X11 window-class detection
   - pipewire
   - pipewire-alsa
   - pipewire-pulse
@@ -94,14 +95,14 @@ pacman_packages:
   - linux-headers
   - openssh
   - rsync
-  - rclone  # S3-compatible client: sync/mount to MinIO/Ceph/R2
+  - rclone # S3-compatible client: sync/mount to MinIO/Ceph/R2
   - ripgrep
   - fd
   - fzf
   - bat
   - eza
   - yazi
-  - ffmpegthumbnailer  # yazi video preview; PDF uses poppler above
+  - ffmpegthumbnailer # yazi video preview; PDF uses poppler above
   - chafa
   - zoxide
   - zsh
@@ -152,9 +153,9 @@ pacman_packages:
   - mpv
   - nsxiv
   - satty
-  - scx-scheds  # sched-ext BPF schedulers (scx_lavd / scx_rusty / ...)
-  - scx-tools   # scx_loader: DBus-managed systemd service for sched-ext
-  - irqbalance  # spread hardware interrupts across cores
+  - scx-scheds # sched-ext BPF schedulers (scx_lavd / scx_rusty / ...)
+  - scx-tools # scx_loader: DBus-managed systemd service for sched-ext
+  - irqbalance # spread hardware interrupts across cores
 
 # pacman `go` clashes with mise's Go toolchain; actively removed on every run.
 packages_pacman_absent:
