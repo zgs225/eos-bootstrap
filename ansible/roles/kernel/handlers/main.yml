@@ -10,3 +10,8 @@
   ansible.builtin.command:
     cmd: "systemctl restart systemd-modules-load.service"
   changed_when: false
+
+- name: Reload zram-generator
+  become: true
+  ansible.builtin.systemd:
+    daemon_reload: true

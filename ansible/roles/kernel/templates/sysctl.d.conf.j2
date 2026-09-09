@@ -1,10 +1,21 @@
 # Managed by Ansible — do not edit by hand.
 
+# File descriptor limits
 fs.file-max = 2097152
 
+# Inotify watchers (neovim, wezterm, file watchers)
 fs.inotify.max_user_watches = 524288
 
-vm.swappiness = 10
+# Memory scheduling & responsiveness (zRAM + MGLRU)
+# High swappiness allows MGLRU to aggressively swap cold anonymous pages into zRAM,
+# freeing uncompressed physical RAM for active file caches (Page Cache).
+vm.swappiness = 150
+vm.vfs_cache_pressure = 50
+vm.page-cluster = 0
+vm.watermark_scale_factor = 125
+vm.dirty_ratio = 15
+vm.dirty_background_ratio = 5
 
+# Network tuning
 net.core.default_qdisc = fq
 net.ipv4.tcp_congestion_control = bbr

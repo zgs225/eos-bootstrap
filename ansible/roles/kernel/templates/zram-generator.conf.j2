@@ -1,0 +1,9 @@
+# Managed by Ansible — do not edit by hand.
+# Configuration for systemd-zram-generator.
+# Allocates dynamic compressed RAM swap devices.
+
+[zram0]
+zram-size = min(ram * 1.5, 24576)
+compression-algorithm = zstd
+swap-priority = 100
+options = discard

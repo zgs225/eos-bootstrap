@@ -1,0 +1,15 @@
+---
+- name: Deploy zram-generator config
+  ansible.builtin.template:
+    src: zram-generator.conf.j2
+    dest: /etc/systemd/zram-generator.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload zram-generator
+
+- name: Ensure zram0 swap service is started
+  ansible.builtin.systemd:
+    name: systemd-zram-setup@zram0.service
+    state: started
+    daemon_reload: true

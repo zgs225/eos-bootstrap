@@ -14,3 +14,10 @@
     apply:
       tags: [kernel, modules]
   tags: [kernel, modules]
+
+- name: Configure zram-generator
+  ansible.builtin.include_tasks:
+    file: zram.yml
+    apply:
+      tags: [kernel, zram]
+  tags: [kernel, zram]
