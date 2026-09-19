@@ -75,7 +75,24 @@ ansible-playbook ansible/playbook.yml --tags tmpdir
 1. `systemctl mask tmp.mount` — removes the upstream tmpfs default.
 2. Strips a `tmpfs /tmp` line from `/etc/fstab` (leaves other `/tmp` entries alone).
 3. Deploys `/etc/tmpfiles.d/tmp.conf`, which **overrides** the vendor file and
-   clears `/tmp` at boot (`D!`, boot-only), so a running system is never touched.
+   therefore restates its age rules:
+
+   ```
+   D! /tmp 1777 root root 0      # clear at boot only
+   D /tmp 1777 root root 10d     # long uptimes: daily systemd-tmpfiles --clean
+   D /var/tmp 1777 root root 30d
+   ```
+
+   No extra timer is needed: `systemd-tmpfiles-clean.timer` already runs
+   `systemd-tmpfiles --clean` daily. Check it with:
+
+   ```bash
+   systemctl list-timers systemd-tmpfiles-clean.timer
+   sudo systemd-tmpfiles --clean --dry-run   # what would be removed right now
+   ```
+
+   A file is only removed once its atime, mtime **and** ctime are all older
+   than the age, so freshly created files survive the next clean run.
 
 **These apply on the next boot** — the live tmpfs mount is intentionally not
 unmounted. Verify after a reboot:
