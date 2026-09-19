@@ -1,0 +1,27 @@
+---
+# /tmp on tmpfs is a net loss on this machine: shmem can only be reclaimed
+# through swap (here zram, so it costs RAM twice), while a disk-backed /tmp
+# uses page cache. Masking tmp.mount also disables the upstream default that
+# Arch enables via local-fs.target.wants.
+#
+# All three tasks take effect on the next boot only — the running tmpfs mount
+# is deliberately left alone so in-flight /tmp sockets and lockfiles stay valid.
+- name: Mask systemd's tmpfs mount unit for /tmp
+  ansible.builtin.systemd:
+    name: tmp.mount
+    masked: true
+    daemon_reload: true
+
+- name: Drop the tmpfs /tmp entry from fstab
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    regexp: '^tmpfs\s+/tmp\s+tmpfs\s+'
+    state: absent
+
+- name: Deploy tmpfiles rule that clears /tmp at boot
+  ansible.builtin.template:
+    src: tmpfiles-tmp.conf.j2
+    dest: /etc/tmpfiles.d/tmp.conf
+    owner: root
+    group: root
+    mode: "0644"

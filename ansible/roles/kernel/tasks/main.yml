@@ -21,3 +21,10 @@
     apply:
       tags: [kernel, zram]
   tags: [kernel, zram]
+
+- name: Configure /tmp backing store
+  ansible.builtin.include_tasks:
+    file: tmpdir.yml
+    apply:
+      tags: [kernel, tmpdir]
+  tags: [kernel, tmpdir]

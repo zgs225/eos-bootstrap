@@ -1,0 +1,6 @@
+# Managed by Ansible — do not edit by hand.
+# Overrides /usr/lib/tmpfiles.d/tmp.conf wholesale, so the /var/tmp rule is
+# restated here. D! runs at boot only, which keeps the daily
+# systemd-tmpfiles --clean run from emptying /tmp under a running system.
+D! /tmp 1777 root root 0
+D /var/tmp 1777 root root 30d

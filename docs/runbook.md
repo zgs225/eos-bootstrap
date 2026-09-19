@@ -61,6 +61,33 @@ kernel_modules:
   - <module-name>
 ```
 
+## /tmp backing store (disk, not tmpfs)
+
+`/tmp` is deliberately on disk: tmpfs pages are shmem, which can only be
+reclaimed through swap (zram here, so it costs RAM twice), whereas a
+disk-backed `/tmp` uses page cache. Arch's default is tmpfs, so the
+`kernel/tmpdir` tasks do three things:
+
+```bash
+ansible-playbook ansible/playbook.yml --tags tmpdir
+```
+
+1. `systemctl mask tmp.mount` — removes the upstream tmpfs default.
+2. Strips a `tmpfs /tmp` line from `/etc/fstab` (leaves other `/tmp` entries alone).
+3. Deploys `/etc/tmpfiles.d/tmp.conf`, which **overrides** the vendor file and
+   clears `/tmp` at boot (`D!`, boot-only), so a running system is never touched.
+
+**These apply on the next boot** — the live tmpfs mount is intentionally not
+unmounted. Verify after a reboot:
+
+```bash
+findmnt /tmp            # empty = on disk now
+systemctl is-enabled tmp.mount   # masked
+```
+
+Rollback: `sudo systemctl unmask tmp.mount` and re-add the fstab line
+`tmpfs /tmp tmpfs defaults,noatime,mode=1777 0 0`.
+
 ## Add a user group
 
 ```yaml
