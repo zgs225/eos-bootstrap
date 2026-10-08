@@ -3,6 +3,23 @@
 # only auto-loads vars/main.yml from a role, not sibling files like
 # vars/pacman_packages.yml.
 
+# Overseas-only pacman mirrors (/etc/pacman.d/mirrorlist), rendered by
+# templates/pacman/mirrorlist.j2 (tasks/pacman-mirrors.yml). Ordered by
+# measured download speed through the TUN proxy chain (2026-10-08);
+# re-measure directory with e.g.
+#   timeout 25 curl -so /dev/null --max-time 18 -w '%{speed_download}' \
+#     https://<mirror>/<path>/extra/os/x86_64/extra.db
+# and reorder. NOTE: *.mirror.pkgbuild.com and archlinux.mailtunnel.eu
+# serve from the domain ROOT (no /archlinux prefix).
+pacman_mirrors:
+  - https://mirror.osbeck.com/archlinux/$repo/os/$arch
+  - https://mirror.rackspace.com/archlinux/$repo/os/$arch
+  - https://mirrors.mit.edu/archlinux/$repo/os/$arch
+  - https://archlinux.mailtunnel.eu/$repo/os/$arch
+  - https://singapore.mirror.pkgbuild.com/$repo/os/$arch
+  - https://taipei.mirror.pkgbuild.com/$repo/os/$arch
+  - https://mirror.givebytes.net/archlinux/$repo/os/$arch
+
 pacman_packages:
   - sudo
   - vim

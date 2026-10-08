@@ -1,0 +1,10 @@
+{{ ansible_managed }}
+# Overseas mirrors only (traffic rides the TUN proxy chain).
+# Order = measured throughput on that chain, best first.
+# Each URL must use the path prefix the mirror actually serves:
+#   /archlinux prefix  — most mirrors
+#   root path          — *.mirror.pkgbuild.com, archlinux.mailtunnel.eu
+
+{% for url in pacman_mirrors %}
+Server = {{ url }}
+{% endfor %}

@@ -73,6 +73,13 @@
       tags: [packages, scx]
   tags: [packages, scx]
 
+- name: Configure pacman mirrorlist
+  ansible.builtin.include_tasks:
+    file: pacman-mirrors.yml
+    apply:
+      tags: [packages, pacman_mirror]
+  tags: [packages, pacman_mirror]
+
 - name: Configure libinput quirks
   ansible.builtin.include_tasks:
     file: libinput.yml

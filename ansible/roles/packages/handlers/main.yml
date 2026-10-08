@@ -82,6 +82,11 @@
     cmd: fc-cache -f
   changed_when: true
 
+- name: Refresh pacman databases
+  ansible.builtin.command:
+    cmd: pacman -Sy
+  changed_when: false
+
 - name: Reload modules-load for thunderbolt
   become: true
   ansible.builtin.command:
