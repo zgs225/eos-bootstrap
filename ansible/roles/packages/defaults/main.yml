@@ -3,16 +3,23 @@
 # only auto-loads vars/main.yml from a role, not sibling files like
 # vars/pacman_packages.yml.
 
+# ParallelDownloads is tuned by the same subtask: 5 parallel streams
+# saturate the single-TCP vmess-wss tunnel (head-of-line blocking), which
+# stalls small .sig files for >10s and trips pacman's low-speed abort.
+pacman_parallel_downloads: 3
+
 # Overseas-only pacman mirrors (/etc/pacman.d/mirrorlist), rendered by
 # templates/pacman/mirrorlist.j2 (tasks/pacman-mirrors.yml). Ordered by
 # measured download speed through the TUN proxy chain (2026-10-08);
-# re-measure directory with e.g.
+# re-measure with e.g.
 #   timeout 25 curl -so /dev/null --max-time 18 -w '%{speed_download}' \
 #     https://<mirror>/<path>/extra/os/x86_64/extra.db
 # and reorder. NOTE: *.mirror.pkgbuild.com and archlinux.mailtunnel.eu
 # serve from the domain ROOT (no /archlinux prefix).
 pacman_mirrors:
-  - https://mirror.osbeck.com/archlinux/$repo/os/$arch
+# mirror.osbeck.com dropped 2026-10-08: behind Cloudflare; through the
+# jp1 proxy chain it repeatedly stalled/tripped HTTP/2 PROTOCOL_ERROR on
+# small .sig files, sinking whole transactions twice.
   - https://mirror.rackspace.com/archlinux/$repo/os/$arch
   - https://mirrors.mit.edu/archlinux/$repo/os/$arch
   - https://archlinux.mailtunnel.eu/$repo/os/$arch

@@ -5,6 +5,13 @@
 # on that chain. Re-measure (see comment in pacman-mirrors var) and
 # reorder before changing.
 
+- name: Tune ParallelDownloads in pacman.conf
+  ansible.builtin.lineinfile:
+    path: /etc/pacman.conf
+    regexp: '^\s*#?\s*ParallelDownloads\s*(=.*)?$'
+    line: 'ParallelDownloads = {{ pacman_parallel_downloads }}'
+    state: present
+
 - name: Deploy pacman mirrorlist
   ansible.builtin.template:
     src: pacman/mirrorlist.j2
