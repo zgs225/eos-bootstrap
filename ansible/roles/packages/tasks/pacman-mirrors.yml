@@ -12,6 +12,13 @@
     line: 'ParallelDownloads = {{ pacman_parallel_downloads }}'
     state: present
 
+- name: Pin kernel/nvidia packages in pacman.conf (IgnorePkg)
+  ansible.builtin.lineinfile:
+    path: /etc/pacman.conf
+    regexp: '^\s*#?\s*IgnorePkg\s*(=.*)?$'
+    line: 'IgnorePkg = {{ pacman_ignore_pkg | join(" ") }}'
+    state: present
+
 - name: Deploy pacman mirrorlist
   ansible.builtin.template:
     src: pacman/mirrorlist.j2

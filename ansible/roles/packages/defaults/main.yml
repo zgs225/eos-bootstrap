@@ -8,6 +8,19 @@
 # stalls small .sig files for >10s and trips pacman's low-speed abort.
 pacman_parallel_downloads: 3
 
+# Kernel packages pinned via IgnorePkg (tasks/pacman-mirrors.yml).
+# Unpin together as one batch: linux, linux-headers and nvidia-open are
+# build-linked (nvidia-open's modules must match the kernel vermagic).
+# Reason: kernel 7.2.9 broke USB enumeration of the MT7922 combo card's
+# Bluetooth function (13d3:3568) - "descriptor read/64, error -110/-62",
+# no hci0, bluetooth.service skipped (2026-10-08). We rolled back to
+# 7.2.7 cached packages. Upgrade to a fixed release (7.2.10+) as a
+# single transaction and verify bluetooth before removing this pin.
+pacman_ignore_pkg:
+  - linux
+  - linux-headers
+  - nvidia-open
+
 # Overseas-only pacman mirrors (/etc/pacman.d/mirrorlist), rendered by
 # templates/pacman/mirrorlist.j2 (tasks/pacman-mirrors.yml). Ordered by
 # measured download speed through the TUN proxy chain (2026-10-08);
