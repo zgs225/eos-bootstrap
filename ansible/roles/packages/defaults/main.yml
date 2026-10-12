@@ -249,6 +249,7 @@ aur_packages:
   - pinentry-rofi
   - wemeet-bin
   - qqmusic-bin
+  - bilibili-bin
   - baidunetdisk-bin
   - buku
   - synology-drive-client
