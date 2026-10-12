@@ -5,4 +5,13 @@ Section "InputClass"
     MatchIsTouchpad "on"
     Driver "libinput"
     Option "NaturalScrolling" "on"
+{% if display_touchpad_tap_click | default(true) %}
+    # Two-finger tap = right click, three-finger tap = middle click (lrm map).
+    Option "Tapping" "on"
+    Option "TappingButtonMap" "lrm"
+{% endif %}
+{% if display_touchpad_clickfinger | default(false) %}
+    # Two-finger physical press = right click, three-finger press = middle.
+    Option "ClickMethod" "clickfinger"
+{% endif %}
 EndSection

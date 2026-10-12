@@ -1,3 +1,5 @@
 display_autologin_tty: tty1
 display_manager: none
 display_touchpad_natural_scroll: true
+display_touchpad_tap_click: true
+display_touchpad_clickfinger: false

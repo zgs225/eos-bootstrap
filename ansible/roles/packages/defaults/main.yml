@@ -9,8 +9,15 @@
 pacman_parallel_downloads: 3
 
 # Kernel packages pinned via IgnorePkg (tasks/pacman-mirrors.yml).
-# Unpin together as one batch: linux, linux-headers and nvidia-open are
-# build-linked (nvidia-open's modules must match the kernel vermagic).
+# Unpin together as one batch: linux, linux-headers and the whole
+# nvidia-open driver stack are build-linked (nvidia-open's modules must
+# match the kernel vermagic, and nvidia-open hard-pins
+# nvidia-utils=<driver-version>). Pinning nvidia-open alone is NOT enough:
+# an unpinned nvidia-utils upgrades on its own and breaks the exact
+# dependency ("installing nvidia-utils (X) breaks dependency
+# 'nvidia-utils=Y' required by nvidia-open", 2026-10-12). nvidia-settings,
+# libxnvctrl and opencl-nvidia ship from the same driver release and must
+# stay in lockstep to avoid user/kernel-space driver skew.
 # Reason: kernel 7.2.9 broke USB enumeration of the MT7922 combo card's
 # Bluetooth function (13d3:3568) - "descriptor read/64, error -110/-62",
 # no hci0, bluetooth.service skipped (2026-10-08). We rolled back to
@@ -20,6 +27,10 @@ pacman_ignore_pkg:
   - linux
   - linux-headers
   - nvidia-open
+  - nvidia-utils
+  - nvidia-settings
+  - libxnvctrl
+  - opencl-nvidia
 
 # Overseas-only pacman mirrors (/etc/pacman.d/mirrorlist), rendered by
 # templates/pacman/mirrorlist.j2 (tasks/pacman-mirrors.yml). Ordered by
@@ -231,6 +242,7 @@ aur_packages:
   - libinput-gestures
   - wps-office
   - ttf-wps-fonts
+  - ttf-fangzheng
   - ttf-lxgw-wenkai
   - eww
   - rofi-greenclip
