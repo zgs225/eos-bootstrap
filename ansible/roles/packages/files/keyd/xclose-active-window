@@ -36,4 +36,7 @@ done
 [ -n "$xauth" ] || { echo "xclose: no XAUTHORITY found for $user on $display" >&2; exit 1; }
 
 # 3. Graceful close of the currently active window.
-exec env DISPLAY="$display" XAUTHORITY="$xauth" xdotool getactivewindow windowclose
+#    Note: xdotool `windowquit` sends _NET_CLOSE_WINDOW (WM_DELETE_WINDOW);
+#    `windowclose` calls XDestroyWindow (force-kill), which bypasses
+#    close-to-tray interception and unsaved-work confirmation dialogs.
+exec env DISPLAY="$display" XAUTHORITY="$xauth" xdotool getactivewindow windowquit
