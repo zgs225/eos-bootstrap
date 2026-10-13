@@ -127,6 +127,7 @@ pacman_packages:
   - noto-fonts-emoji
   - ttf-dejavu
   - adobe-source-han-serif-cn-fonts
+  - adobe-source-han-sans-cn-fonts
   - kvantum
   - kvantum-qt5
   - fcitx5

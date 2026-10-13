@@ -15,3 +15,12 @@
     directory_mode: "0755"
   notify: Refresh font cache
   tags: [packages, fontconfig]
+
+- name: Remove superseded simsun-only alias (renamed to 59-ms-cjk-alias.conf)
+  become: true
+  ansible.builtin.file:
+    path: /etc/fonts/conf.d/59-simsun-alias.conf
+    state: absent
+  check_mode: false
+  changed_when: false
+  tags: [packages, fontconfig]
