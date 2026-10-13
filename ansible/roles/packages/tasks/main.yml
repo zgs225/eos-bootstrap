@@ -45,6 +45,13 @@
       tags: [packages, fontconfig]
   tags: [packages, fontconfig]
 
+- name: Generate Windows-name CJK alias fonts
+  ansible.builtin.include_tasks:
+    file: ms_cjk_alias_fonts.yml
+    apply:
+      tags: [packages, ms-cjk-alias]
+  tags: [packages, ms-cjk-alias]
+
 - name: Detect VM environment
   ansible.builtin.include_tasks:
     file: vm_detect.yml
