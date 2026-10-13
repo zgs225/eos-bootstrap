@@ -38,13 +38,6 @@
       tags: [packages, chongxi_seal]
   tags: [packages, chongxi_seal]
 
-- name: Deploy bundled no-package fonts
-  ansible.builtin.include_tasks:
-    file: wps_fonts.yml
-    apply:
-      tags: [packages, wps_fonts]
-  tags: [packages, wps_fonts]
-
 - name: Detect VM environment
   ansible.builtin.include_tasks:
     file: vm_detect.yml
