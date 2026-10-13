@@ -242,6 +242,17 @@ aur_packages:
   - libinput-gestures
   - wps-office
   - ttf-wps-fonts
+  # WPS missing-font fill: ttf-wps-fonts covers MS western + symbol fonts.
+  # - ttf-ms-win11-auto-zh_cn/-zh_tw: 宋体/黑体/微软雅黑/楷体/仿宋/等线
+  #   (zh_cn) + 新細明體 MingLiU/PMingLiU (zh_tw). The "auto" variants
+  #   download the fonts from the official Microsoft download-server at
+  #   PKGBUILD time (via httpdirfs on the Win11 ISO), so no ISO extraction
+  #   is needed. The non-auto win10/win11 variants are NOT automatable
+  #   (manual ISO extraction). CAVEAT: if a build is ever interrupted, a
+  #   stale httpdirfs FUSE mount may linger under
+  #   ~/.cache/paru/clone/ttf-ms-win11-auto/src/mnt/http and break the
+  #   next build's rm -rf ("Function not implemented"); clear it with
+  #   `sudo fusermount -uz <mount>`.
   - ttf-fangzheng
   - ttf-lxgw-wenkai
   - eww
@@ -263,3 +274,26 @@ chongxi_seal_source_url: >-
   https://xiaoxue.iis.sinica.edu.tw/chongxi/files/chongxi_seal.zip
 chongxi_seal_source_sha256: >-
   f2094efc193956ca794fb57e991c0a7218287ac3c69bc14966b2c9871c65b7a7
+
+# Fonts shipped as files instead of packages (华文系列 / 隶书 / 幼圆 /
+# *_GB2312 etc. have no AUR package and no auto-downloadable source).
+# Drop .ttf/.ttc/.otf files into roles/packages/files/wps_fonts/ and they
+# get deployed to this directory (system-wide, not under ~ — chezmoi
+# boundary rule). Read-only users find them via fc-cache after the handler.
+wps_fonts_install_dir: /usr/local/share/fonts/wps-bundled
+
+# AUR packages that can't complete their FIRST build inside Ansible:
+# ttf-ms-win11-auto-* needs udisks2 loop mounts, whose polkit actions
+# (org.freedesktop.udisks2.loop-setup/filesystem-mount) can only be
+# authorized in an interactive session — under Ansible the prompt has no
+# controlling TTY and fails with NotAuthorizedCanObtain. The task
+# therefore runs best-effort (never fails the play) and just hints at the
+# one-time interactive install:
+#   paru -S ttf-ms-win11-auto-zh_cn ttf-ms-win11-auto-zh_tw
+# Once installed, every later run is an idempotent no-op. If a build is
+# ever interrupted mid-way, the cleanup commands are in the PKGBUILD's
+# header comments (fusermount -uz of src/mnt/http + udisksctl
+# loop-delete); without it the next attempt dies on rm -rf of $srcdir.
+aur_packages_interactive:
+  - ttf-ms-win11-auto-zh_cn
+  - ttf-ms-win11-auto-zh_tw

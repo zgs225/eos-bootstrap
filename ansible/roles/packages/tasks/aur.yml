@@ -14,7 +14,7 @@
   become_user: "{{ target_user }}"
   environment:
     PARU: "1"
-  command:
+  ansible.builtin.command:
     cmd: "paru -S --needed --noconfirm {{ aur_packages | join(' ') }}"
   when:
     - aur_packages | length > 0
@@ -23,3 +23,64 @@
   check_mode: false
   register: aur_install
   failed_when: aur_install.rc != 0
+
+# aur_packages_interactive: first build needs an authorized polkit prompt
+# (udisks2 loop mounts) which only exists inside an interactive session.
+# Best-effort here — see defaults/main.yml for the full rationale. A
+# failed makepkg leaves backlog: loop devices backed by the ISO inside
+# $srcdir/mnt/http plus the httpdirfs FUSE mount itself — both break the
+# NEXT run's `rm -rf $srcdir` ("Function not implemented"). The cleanup
+# task below therefore runs after every attempt loop devices first
+# (they keep the FUSE mount busy), then lazily unmounts the FUSE mount,
+# then clears the whole srcdir so the next run downloads fresh.
+- name: Check which interactive-first AUR packages are already installed
+  ansible.builtin.command:
+    cmd: "pacman -Q {{ aur_packages_interactive | join(' ') }}"
+  register: aur_interactive_all_installed
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: aur_packages_interactive | length > 0
+
+- name: Best-effort install of interactive-first AUR packages
+  become: true
+  become_user: "{{ target_user }}"
+  environment:
+    PARU: "1"
+  ansible.builtin.command:
+    cmd: "paru -S --needed --noconfirm {{ aur_packages_interactive | join(' ') }}"
+  when:
+    - aur_packages_interactive | length > 0
+    - aur_interactive_all_installed.rc | default(1) != 0
+  changed_when: false
+  check_mode: false
+  failed_when: false
+  register: aur_interactive_install
+
+- name: Clean leftover win11-auto mounts after failed builds
+  become: true
+  ansible.builtin.shell: |
+    set -uo pipefail
+    clone="/home/{{ target_user }}/.cache/paru/clone/ttf-ms-win11-auto"
+    losetup -a | awk -F: '/26100\.[0-9.]+.*\.iso|ttf-ms-win11-auto/ {gsub(/:.*/,"",$1);print $1}' \
+      | xargs -r -n1 losetup -d || true
+    fusermount -uz "$clone/src/mnt/http" || true
+    rm -rf "$clone/src"
+  changed_when: false
+  failed_when: false
+  tags: [packages, aur]
+
+- name: Hint one-time interactive install for interactive-first AUR packages
+  ansible.builtin.debug:
+    msg: >-
+      Could not build {{ aur_packages_interactive | join(' ') }}
+      non-interactively (its PKGBUILD mounts the Windows 11 ISO through
+      udisks2, and those polkit actions cannot prompt without a TTY).
+      Run ONCE in your desktop terminal:
+        paru -S {{ aur_packages_interactive | join(' ') }}
+      then re-run the playbook. If the build left debris behind, see the
+      cleanup commands in the header of
+      ~/.cache/paru/clone/ttf-ms-win11-auto/PKGBUILD.
+  when:
+    - aur_packages_interactive | length > 0
+    - aur_interactive_install.rc | default(0) != 0
