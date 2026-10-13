@@ -242,6 +242,7 @@ aur_packages:
   - libinput-gestures
   - wps-office
   - ttf-wps-fonts
+  - wps-office-fonts
   - ttf-fangzheng
   - ttf-lxgw-wenkai
   - eww
