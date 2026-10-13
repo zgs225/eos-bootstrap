@@ -23,29 +23,43 @@ from fontTools.ttLib import TTFont
 
 OUT_DIR = "/usr/share/fonts/ms-cjk-alias"
 
-# (source font, [(en family, zh family, PostScript name), ...])
+# (source font, [(en family, zh family, PostScript name, style), ...])
+# One face per style: apps like WPS look up a REAL bold face within the
+# family instead of synthesizing one, and substitute to a Western bold
+# (tofu for CJK) when absent — so Regular and Bold must both exist.
 JOBS = [
     (
         "/usr/share/fonts/adobe-source-han-serif/SourceHanSerifCN-Regular.otf",
-        [("SimSun", "宋体", "SimSun")],
+        [("SimSun", "宋体", "SimSun", "Regular")],
+    ),
+    (
+        "/usr/share/fonts/adobe-source-han-serif/SourceHanSerifCN-Bold.otf",
+        [("SimSun", "宋体", "SimSun-Bold", "Bold")],
     ),
     (
         "/usr/share/fonts/adobe-source-han-sans/SourceHanSansCN-Regular.otf",
         [
-            ("SimHei", "黑体", "SimHei"),
-            ("Microsoft YaHei", "微软雅黑", "MicrosoftYaHei"),
+            ("SimHei", "黑体", "SimHei", "Regular"),
+            ("Microsoft YaHei", "微软雅黑", "MicrosoftYaHei", "Regular"),
+        ],
+    ),
+    (
+        "/usr/share/fonts/adobe-source-han-sans/SourceHanSansCN-Bold.otf",
+        [
+            ("SimHei", "黑体", "SimHei-Bold", "Bold"),
+            ("Microsoft YaHei", "微软雅黑", "MicrosoftYaHei-Bold", "Bold"),
         ],
     ),
     (
         "/usr/share/fonts/TTF/LXGWWenKai-Regular.ttf",
-        [("KaiTi", "楷体", "KaiTi")],
+        [("KaiTi", "楷体", "KaiTi", "Regular")],
     ),
 ]
 
 REWRITE_IDS = {1, 2, 4, 6, 16, 17}
 
 
-def rename(src_path: str, en: str, zh: str, ps: str) -> str:
+def rename(src_path: str, en: str, zh: str, ps: str, style: str) -> str:
     font = TTFont(src_path, lazy=False)
     name = font["name"]
     for record in list(name.names):
@@ -55,13 +69,13 @@ def rename(src_path: str, en: str, zh: str, ps: str) -> str:
             )
     for lang, family in ((0x409, en), (0x804, zh)):
         name.setName(family, 1, 3, 1, lang)
-        name.setName("Regular", 2, 3, 1, lang)
-        name.setName(family, 4, 3, 1, lang)
+        name.setName(style, 2, 3, 1, lang)
+        name.setName(f"{family} {style}" if style != "Regular" else family, 4, 3, 1, lang)
         name.setName("Version 1.0 (alias)", 5, 3, 1, lang)
         name.setName(ps, 6, 3, 1, lang)
     name.setName(en, 1, 1, 0, 0)
-    name.setName("Regular", 2, 1, 0, 0)
-    name.setName(en, 4, 1, 0, 0)
+    name.setName(style, 2, 1, 0, 0)
+    name.setName(f"{en} {style}" if style != "Regular" else en, 4, 1, 0, 0)
     name.setName(ps, 6, 1, 0, 0)
     out = os.path.join(OUT_DIR, ps + os.path.splitext(src_path)[1])
     font.save(out)
@@ -77,11 +91,11 @@ def main() -> int:
             print(f"SKIP missing source: {src_path}", file=sys.stderr)
             continue
         src_mtime = os.path.getmtime(src_path)
-        for en, zh, ps in targets:
+        for en, zh, ps, style in targets:
             out = os.path.join(OUT_DIR, ps + os.path.splitext(src_path)[1])
             if os.path.exists(out) and os.path.getmtime(out) >= src_mtime:
                 continue
-            tmp_out = rename(src_path, en, zh, ps)
+            tmp_out = rename(src_path, en, zh, ps, style)
             os.chmod(tmp_out, 0o644)
             os.utime(tmp_out, (src_mtime, src_mtime))
             regenerated.append(tmp_out)
