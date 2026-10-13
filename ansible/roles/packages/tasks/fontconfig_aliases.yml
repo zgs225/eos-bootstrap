@@ -1,0 +1,17 @@
+---
+# Strong fontconfig aliases for Windows/Office fonts that are not
+# installed and have no AUR/license path: bind them to what we DO have
+# (see files/fontconfig/59-simsun-alias.conf). Deployed to
+# /etc/fonts/conf.d/, read live by fontconfig — no service restart, but
+# the handler keeps the font cache warm for anything that did change.
+- name: Deploy fontconfig font aliases
+  become: true
+  ansible.builtin.copy:
+    src: fontconfig/
+    dest: /etc/fonts/conf.d/
+    owner: root
+    group: root
+    mode: "0644"
+    directory_mode: "0755"
+  notify: Refresh font cache
+  tags: [packages, fontconfig]

@@ -38,6 +38,13 @@
       tags: [packages, chongxi_seal]
   tags: [packages, chongxi_seal]
 
+- name: Deploy fontconfig font aliases
+  ansible.builtin.include_tasks:
+    file: fontconfig_aliases.yml
+    apply:
+      tags: [packages, fontconfig]
+  tags: [packages, fontconfig]
+
 - name: Detect VM environment
   ansible.builtin.include_tasks:
     file: vm_detect.yml
