@@ -294,6 +294,22 @@ Per-application overrides (e.g. whitelisting wezterm so native `Alt+c/v` keeps w
 pkill -USR1 -f keyd-application-mapper
 ```
 
+On i3 the mapper follows the focused window through i3's IPC socket instead of
+the fragile python-xlib event loop. It reconnects and re-syncs by itself after
+an i3 restart, and it should sit at ~0% CPU. Health check:
+
+```bash
+ps -o pid,pcpu,etime,cmd -C python3 | grep keyd-application-mapper
+cat ~/.config/keyd/app.log        # line-buffered; 'i3 detected' on startup
+```
+
+If it ever reaches a full CPU core, restart it (i3 only starts it at login, so
+nothing else will):
+
+```bash
+pkill -f keyd-application-mapper; keyd-application-mapper -d
+```
+
 After the first bootstrap the user must re-login once so the `keyd` group is active for the mapper to reach `/run/keyd.socket`.
 
 ## Update or reinstall a vendored system font

@@ -29,11 +29,24 @@
 
 # keyd-application-mapper ships inside the keyd package at /usr/bin, where a
 # pacman upgrade overwrites it. This patched copy lives in /usr/local/bin
-# (ahead of /usr/bin in PATH) and fixes the active-window detection:
-# upstream favours a _NET_WM_STATE_ABOVE floating window over the real X
-# input focus, so a PiP video / eww popup / any always-on-top window makes
-# the mapper push wrong per-app bindings and wezterm Alt+v / Alt+[ / Alt+]
-# silently stop working. After keyd upgrades, diff/port the fix forward:
+# (ahead of /usr/bin in PATH) and makes two changes:
+#
+# 1. On i3 it follows the focused window through i3's IPC socket instead of
+#    python-xlib. The xlib event loop can raise mid send_and_recv (e.g.
+#    "Expected reply for request X, but got Y. Can't happen!"), and because
+#    the callers swallow every exception the Display is left with stale
+#    send_active/request_waiting flags. Every later ReplyRequest.reply() then
+#    spins in a pure-python busy loop (100% of a core, no syscalls) and the
+#    mapper silently stops updating per-app bindings. i3 IPC has no such
+#    request/reply matching and reports focus/title/workspace changes
+#    directly. It also reconnects and resyncs after an i3 restart.
+#
+# 2. The X fallback used by other sessions no longer favours a
+#    _NET_WM_STATE_ABOVE floating window over the real X input focus, so a PiP
+#    video / eww popup / any always-on-top window can no longer make the
+#    mapper push wrong per-app bindings (wezterm Alt+v / Alt+[ / Alt+]).
+#
+# After keyd upgrades, diff/port the fixes forward:
 # diff -u /usr/bin/keyd-application-mapper /usr/local/bin/keyd-application-mapper
 - name: Deploy patched keyd-application-mapper (focus-following override)
   ansible.builtin.copy:

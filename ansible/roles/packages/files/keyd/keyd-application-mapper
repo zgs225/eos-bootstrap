@@ -1,10 +1,12 @@
 #!/usr/bin/python3
 
+import json
 import subprocess
 import argparse
 import select
 import socket
 import struct
+import time
 import os
 import errno
 import shutil
@@ -333,6 +335,231 @@ class Cosmic():
             if event == 8  and payload[0] > 0 and payload[4] == 2:
                 self.on_window_change(windows[obj].get('appid', ''), windows[obj].get('title', ''))
 
+# i3 IPC message types and event type numbers (see i3's docs/ipc.html).
+# On the wire, event messages have the high bit set in the type field.
+_I3_IPC_MAGIC = b'i3-ipc'
+_I3_IPC_HEADER = struct.Struct('=6sII')
+_I3_MSG_SUBSCRIBE = 2
+_I3_MSG_GET_TREE = 4
+_I3_EV_WORKSPACE = 0
+_I3_EV_OUTPUT = 1
+_I3_EV_WINDOW = 3
+
+
+class I3Monitor():
+    """Follow i3's focused window through its IPC socket.
+
+    This replaces the python-xlib XMonitor on i3.  The xlib event loop can
+    raise from the middle of send_and_recv (e.g. "Expected reply for request
+    X, but got Y.  Can't happen!" on a reply/event desync), and because the
+    callers swallow every exception, the Display object is then left with
+    stale send_active/request_waiting flags.  From that point on every
+    ReplyRequest.reply() takes send_and_recv's early-return branch and spins
+    in a pure-python busy loop: 100% of a core, zero syscalls, and the mapper
+    stops reacting to window changes (so stale per-app bindings stay loaded).
+
+    i3 already tracks the focused window - it is what sets the X input focus
+    - and its IPC stream reports focus/title/workspace changes directly, so
+    there is no fragile request/reply matching involved.  Dedicated command
+    and event sockets are kept separate (as i3ipc does) so command replies
+    can never be mistaken for events.
+    """
+
+    def __init__(self, on_window_change):
+        if not (os.getenv('I3SOCK') or
+                'i3' in os.getenv('XDG_CURRENT_DESKTOP', '').lower()):
+            raise Exception('i3 session not detected')
+
+        self.on_window_change = on_window_change
+        self.ev_sock = None
+        self.cmd_sock = None
+        self.focused_id = None
+        self.last = None
+        self.usr_r, self.usr_w = os.pipe()
+
+    # --- i3 IPC wire protocol ------------------------------------------------
+
+    def _socket_path(self):
+        # Do not trust a possibly stale $I3SOCK: after an i3 restart the socket
+        # is recreated (same path, since i3 re-execs itself and keeps its pid),
+        # while a fresh login can change it.  Ask the running i3 instead - it
+        # advertises the path in the I3_SOCKET_PATH root window property.
+        env = {k: v for k, v in os.environ.items() if k != 'I3SOCK'}
+        try:
+            return subprocess.check_output(['i3', '--get-socketpath'],
+                                           env=env).decode('utf8').strip()
+        except Exception:
+            path = os.getenv('I3SOCK')
+            if not path:
+                raise
+            return path
+
+    def _send(self, sock, msg_type, payload):
+        data = json.dumps(payload).encode('utf8')
+        sock.sendall(_I3_IPC_HEADER.pack(_I3_IPC_MAGIC, len(data), msg_type) + data)
+
+    def _recv(self, sock):
+        header = b''
+        while len(header) < _I3_IPC_HEADER.size:
+            chunk = sock.recv(_I3_IPC_HEADER.size - len(header))
+            if not chunk:
+                raise EOFError('i3 ipc connection closed')
+            header += chunk
+
+        magic, length, msg_type = _I3_IPC_HEADER.unpack(header)
+        if magic != _I3_IPC_MAGIC:
+            raise Exception(f'bad i3 ipc magic: {magic!r}')
+
+        data = b''
+        while len(data) < length:
+            chunk = sock.recv(length - len(data))
+            if not chunk:
+                raise EOFError('i3 ipc connection closed')
+            data += chunk
+
+        return msg_type, json.loads(data.decode('utf8'))
+
+    def _open_socket(self, subscribe=False):
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.connect(self._socket_path())
+        if subscribe:
+            self._send(sock, _I3_MSG_SUBSCRIBE,
+                       ['window', 'workspace', 'output'])
+            _, reply = self._recv(sock)
+            if not reply.get('success'):
+                raise Exception('i3 subscribe failed')
+        return sock
+
+    def _close(self):
+        for sock in (self.ev_sock, self.cmd_sock):
+            try:
+                if sock:
+                    sock.close()
+            except Exception:
+                pass
+        self.ev_sock = None
+        self.cmd_sock = None
+
+    def _connect(self):
+        while True:
+            try:
+                if self.ev_sock is None:
+                    self.ev_sock = self._open_socket(subscribe=True)
+                if self.cmd_sock is None:
+                    self.cmd_sock = self._open_socket()
+                return
+            except Exception as e:
+                print(f'i3 ipc connect failed ({e}), retrying...')
+                time.sleep(1)
+
+    # --- focus bookkeeping ---------------------------------------------------
+
+    def _query_focused(self):
+        """Return i3's focused container, or None.
+
+        Uses the dedicated command socket so that a reply can never be
+        confused with an event (they share the same framing but not socket).
+        """
+        if self.cmd_sock is None:
+            self.cmd_sock = self._open_socket()
+        self._send(self.cmd_sock, _I3_MSG_GET_TREE, None)
+        _, tree = self._recv(self.cmd_sock)
+
+        stack = [tree]
+        while stack:
+            node = stack.pop()
+            if node.get('focused'):
+                return node
+            stack.extend(node.get('nodes') or [])
+            stack.extend(node.get('floating_nodes') or [])
+        return None
+
+    @staticmethod
+    def _window_info(node):
+        """(class, title) for a container.
+
+        class is the second WM_CLASS field and title is i3's stored name
+        (the _NET_WM_NAME of the window).  Both are '' for i3-internal
+        containers (workspace/output/root), i.e. the same outcome as the X
+        backend walking up the tree and finding no WM_CLASS: lookup_bindings()
+        finds nothing and the per-app bindings are cleared.
+        """
+        props = node.get('window_properties') or {}
+        return props.get('class') or '', node.get('name') or ''
+
+    def _emit(self, node):
+        cls, title = self._window_info(node) if node else ('', '')
+        self.focused_id = node.get('id') if node else None
+
+        if (cls, title) == self.last:
+            return
+        self.last = (cls, title)
+        self.on_window_change(cls, title)
+
+    def _sync(self):
+        self._emit(self._query_focused())
+
+    def _handle(self, msg_type, event):
+        etype = msg_type & 0x7f
+        change = event.get('change')
+        container = event.get('container') or {}
+
+        if etype == _I3_EV_WINDOW and change == 'focus' and container.get('window'):
+            # The event carries the newly focused container; no extra round
+            # trip needed.  Focus events without a window (empty split con)
+            # fall through to the get_tree path.
+            self._emit(container)
+        elif etype == _I3_EV_WINDOW and change == 'title':
+            # Only the focused window's title affects the pushed bindings.
+            # Ignoring background titles keeps animated titles from causing
+            # churn (Chrome in particular updates them often).
+            if container.get('id') == self.focused_id:
+                self._emit(container)
+        else:
+            # new/close/move/floating/fullscreen/urgent/mark, plus workspace
+            # and output events, can all change or clear the focus implicitly.
+            self._sync()
+
+    # --- signals -------------------------------------------------------------
+
+    def _on_usr1(self, *_):
+        os.write(self.usr_w, b'i')
+
+    # --- main loop -----------------------------------------------------------
+
+    def init(self):
+        signal.signal(signal.SIGUSR1, self._on_usr1)
+        self._connect()
+        self._sync()
+
+    def run(self):
+        while True:
+            try:
+                readable, _, _ = select.select([self.ev_sock, self.usr_r], [], [])
+            except select.error as err:
+                if getattr(err, 'errno', None) != errno.EINTR:
+                    raise
+                continue
+
+            if self.usr_r in readable:
+                os.read(self.usr_r, 1)
+                # USR1 means "config may have changed, re-push bindings".
+                self.last = None
+                self._sync()
+                continue
+
+            try:
+                self._handle(*self._recv(self.ev_sock))
+            except Exception as e:
+                # i3 restarted/exited: reconnect and resync rather than
+                # spinning or silently going stale.
+                print(f'i3 ipc lost ({e}), reconnecting...')
+                self._close()
+                self.last = None
+                self._connect()
+                self._sync()
+
+
 class XMonitor():
     def __init__(self, on_window_change):
         assert_env('DISPLAY')
@@ -482,6 +709,7 @@ def get_monitor(on_window_change):
         ('wlroots', Wlroots),
         ('cosmic', Cosmic),
         ('Gnome', GnomeMonitor),
+        ('i3', I3Monitor),
         ('X', XMonitor),
     ]
 
@@ -513,6 +741,15 @@ def daemonize():
     os.close(2)
     os.dup2(fh.fileno(), 1)
     os.dup2(fh.fileno(), 2)
+
+    # LOGFILE is the daemon's only diagnostic output.  Without this the
+    # interpreter's block buffering means nothing ever reaches the file
+    # until the (potentially wedged) process exits.
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(line_buffering=True)
+        except Exception:
+            pass
 
     if os.fork(): exit(0)
     if os.fork(): exit(0)
