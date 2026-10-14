@@ -236,6 +236,7 @@ aur_packages:
   - kimi-code
   - cursor-bin
   - pi-bin
+  - herdr-bin
   - clash-verge-rev-bin
   - betterlockscreen
   - xidlehook
