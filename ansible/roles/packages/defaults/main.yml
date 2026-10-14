@@ -126,6 +126,9 @@ pacman_packages:
   - noto-fonts-cjk
   - noto-fonts-emoji
   - ttf-dejavu
+  - ttf-jetbrains-mono-nerd
+  - ttf-cascadia-code-nerd
+  - ttf-nerd-fonts-symbols
   - adobe-source-han-serif-cn-fonts
   - adobe-source-han-sans-cn-fonts
   - kvantum
@@ -230,7 +233,6 @@ vm_pacman_packages:
   - spice-vdagent
 
 aur_packages:
-  - nerd-fonts
   - google-chrome
   - opencode
   - kimi-code
