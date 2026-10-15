@@ -337,3 +337,86 @@ To refresh (currently: 崇羲篆體 / Chong Xi Small Seal):
    ```bash
    fc-list | grep -i 'chong xi small seal'
    ```
+
+## CJK alias fonts for WPS / Word documents (`ms-cjk-alias`)
+
+Chinese documents ask for fonts that cannot be installed (Microsoft's 宋体/
+黑体/微软雅黑/等线, Apple's 华文*, 方正*). Two mechanisms cover them:
+
+1. **Real fonts from packages, preferred.** Before faking a family, check
+   whether a package ships a real face for that style — `paru -Ss <关键词>`.
+   Currently used: `ttf-fangzheng` and `ttf-foundertype-sc-fonts` (方正 仿宋/
+   书宋/楷体/黑体/小标宋/隶书/魏碑/行楷…), `ttf-zhuque-fangsong-bin` (朱雀仿宋,
+   OFL — the source for the 仿宋 aliases), `ttf-canger-shuyuan` (真圆体, 5
+   weights), `ttf-lxgw-wenkai` (真楷体, the source for the 楷体 aliases).
+2. **Renamed OFL sources for the names no package can provide.**
+   `ansible/roles/packages/files/ms_cjk_alias_fonts/generate_ms_cjk_alias_fonts.py`
+   writes fonts into `/usr/share/fonts/ms-cjk-alias/` whose family names ARE the
+   missing names. Only OFL sources (思源黑体/思源宋体/霞鹜文楷/朱雀仿宋) are ever
+   renamed: OFL forbids reusing the *source's* Reserved Font Names, nothing
+   else. The commercial 方正 fonts are **never** renamed, only installed.
+
+The fontconfig aliases in `59-ms-cjk-alias.conf` are the third mechanism, for
+the apps that DO consult fontconfig (LibreOffice, GTK/Qt text stacks).
+
+### Why it is needed (the "黑块" root cause)
+
+WPS keeps its own font list and never consults fontconfig aliases for document
+fonts. For a family it does not have it falls back to a single generic CJK face,
+which ships one weight. On a **bold** run WPS then finds no Bold face in the
+resolved family and synthesises one itself, and the result is a solid black mass
+instead of glyphs — characters render as black blocks in bold runs only.
+
+So the breakage is not "font missing", it is "the resolved family has no real
+Bold face". Three consequences drive the design:
+
+- every target family ends up with **both** a Regular and a Bold face;
+- where a package already provides the Regular, only the missing Bold is
+  generated (`REAL` in the table) so WPS never sees two Regular faces;
+- the OS/2 + head weight metadata is **normalised** to 400/700 with the
+  BOLD/REGULAR bits set. A face copied straight from a Light/Medium source would
+  otherwise stay invisible to WPS's bold lookup and the black blocks return.
+
+Verify the whole table resolves (exits non-zero on a gap):
+
+```bash
+cd ansible/roles/packages/files/ms_cjk_alias_fonts
+MS_CJK_ALIAS_TIER=1 python3 generate_ms_cjk_alias_fonts.py --check
+```
+
+Diagnosing a specific document (which face does WPS actually use?):
+
+```bash
+strace -f -e trace=openat -o /tmp/wps.strace et some.xlsx
+# …scroll the document… then:
+grep -o -E '"/usr/share/fonts/[^"]*\.(ttf|otf)"' /tmp/wps.strace | sort -u
+```
+
+A correct bold run opens e.g. `ms-cjk-alias/DengXian-Bold.otf`; a broken one
+opens nothing but `fangzheng/fangzhengfangsong_gbk.ttf`. Note that WPS also pops
+a "font is not available, substitute?" dialog for families it cannot resolve at
+all — that dialog's pixels are easy to mistake for the black blocks in a
+screenshot.
+
+### Regenerating / extending coverage
+
+Every alias entry is a **full copy** of its source face (~8.5 MB sans, ~12 MB
+serif, ~24 MB kai, per face), so coverage is tiered; the task passes
+`ms_cjk_alias_tier` (default 1). Add the package to `aur_packages` first if a
+real font exists for the style.
+
+```bash
+cd ansible/roles/packages/files/ms_cjk_alias_fonts
+# what a tier would install, with the disk cost per face
+MS_CJK_ALIAS_TIER=1 python3 generate_ms_cjk_alias_fonts.py --list
+# install / refresh (known limitation: LXGW WenKai has no Bold, so kai
+# families use its Medium, and italic CJK runs still have no dedicated face)
+sudo -E MS_CJK_ALIAS_TIER=1 python3 generate_ms_cjk_alias_fonts.py
+sudo fc-cache -f
+```
+
+Generation is idempotent: a manifest (`/usr/share/fonts/ms-cjk-alias/.manifest.json`)
+records the generator version plus each source's mtime/size, so editing the
+family table or the script regenerates exactly what changed and removes faces
+that are no longer produced. WPS caches its font list at startup — restart it
+after a change.

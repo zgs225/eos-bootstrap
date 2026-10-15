@@ -249,6 +249,13 @@ aur_packages:
   - wps-office-fonts
   - ttf-fangzheng
   - ttf-lxgw-wenkai
+  # Real CJK faces used to fill the gaps the rename table cannot cover:
+  # 朱雀仿宋 is the OFL 仿宋 source for the 仿宋/仿宋_GB2312/华文仿宋 aliases
+  # (see files/ms_cjk_alias_fonts/); 方正免费四款 and 仓耳舒圆体 are real fonts
+  # that documents ask for by name and that no alias has to fake.
+  - ttf-zhuque-fangsong-bin
+  - ttf-foundertype-sc-fonts
+  - ttf-canger-shuyuan
   - eww
   - rofi-greenclip
   - pinentry-rofi
