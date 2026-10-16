@@ -22,6 +22,13 @@
       tags: [kernel, zram]
   tags: [kernel, zram]
 
+- name: Configure kernel command line
+  ansible.builtin.include_tasks:
+    file: cmdline.yml
+    apply:
+      tags: [kernel, cmdline]
+  tags: [kernel, cmdline]
+
 - name: Configure /tmp backing store
   ansible.builtin.include_tasks:
     file: tmpdir.yml

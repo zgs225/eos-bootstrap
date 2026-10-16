@@ -1,0 +1,31 @@
+---
+# /etc/kernel/cmdline holds a single line of space-separated parameters that
+# kernel-install's 90-loaderentry hook reads when it (re)generates the
+# systemd-boot entries. It also carries host-specific root=/resume= UUIDs, so
+# this task never templates the whole file: only our own parameter is
+# rewritten and everything else is preserved byte-for-byte.
+- name: Read the current kernel command line
+  ansible.builtin.slurp:
+    src: "{{ kernel_cmdline_path }}"
+  register: kernel_cmdline_raw
+  changed_when: false
+
+# Why zswap.enabled=0: zswap sits in front of swap and compresses pages before
+# they reach zram, which compresses them again. ArchWiki (Zram) recommends
+# disabling zswap whenever zram is used, otherwise zram "cannot be used
+# effectively". This host uses zram (see tasks/zram.yml).
+- name: Disable zswap on the kernel command line
+  ansible.builtin.copy:
+    content: "{{ kernel_cmdline_desired }}\n"
+    dest: "{{ kernel_cmdline_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  vars:
+    _current: "{{ kernel_cmdline_raw.content | b64decode | trim }}"
+    # Strip any pre-existing zswap.enabled=... (so a stale =1 is corrected
+    # rather than duplicated), then append ours.
+    _base: "{{ _current | regex_replace('\\s*zswap\\.enabled=\\S+', '') | trim }}"
+    kernel_cmdline_desired: "{{ (_base ~ ' zswap.enabled=0') | trim }}"
+  when: kernel_cmdline_desired != _current
+  notify: Regenerate boot entries

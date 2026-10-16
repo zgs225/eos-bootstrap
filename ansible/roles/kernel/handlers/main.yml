@@ -15,3 +15,13 @@
   become: true
   ansible.builtin.systemd:
     daemon_reload: true
+
+# /etc/kernel/cmdline is only consumed when kernel-install regenerates the
+# systemd-boot entries, so a cmdline change needs a full kernel reinstall
+# (loader entries + initramfs). reinstall-kernels is provided by
+# kernel-install-for-dracut (this host runs dracut, not mkinitcpio).
+- name: Regenerate boot entries
+  become: true
+  ansible.builtin.command:
+    cmd: "reinstall-kernels"
+  changed_when: false

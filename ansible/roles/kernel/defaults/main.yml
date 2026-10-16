@@ -1,4 +1,5 @@
 ---
 sysctl_path: /etc/sysctl.d/99-eos.conf
 modules_load_path: /etc/modules-load.d/eos.conf
+kernel_cmdline_path: /etc/kernel/cmdline
 kernel_modules: []
