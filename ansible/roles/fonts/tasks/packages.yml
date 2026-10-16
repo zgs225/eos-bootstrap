@@ -1,0 +1,10 @@
+---
+# update_cache keeps `--tags fonts` usable on its own; community.general.pacman
+# reports changed only when the DB *content* changed (see update_package_db in
+# the module), so a steady-state re-run stays changed=0.
+- name: Install default font packages
+  become: true
+  community.general.pacman:
+    name: "{{ fonts_pacman_packages }}"
+    state: present
+    update_cache: true

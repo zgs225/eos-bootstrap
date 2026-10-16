@@ -1,0 +1,9 @@
+---
+# Distinct handler name on purpose: handler names share one namespace across
+# all roles in this single play, and packages already defines
+# "Refresh font cache" (last definition wins).
+- name: Refresh font cache for fonts
+  become: true
+  ansible.builtin.command:
+    cmd: fc-cache -f
+  changed_when: true

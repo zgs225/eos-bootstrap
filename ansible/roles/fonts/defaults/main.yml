@@ -1,0 +1,8 @@
+---
+# inter-font ships in extra (4.1-1, OFL-1.1-RFN): /usr/share/fonts/inter/
+# {Inter.ttc,InterVariable.ttf}. Declared in this role instead of
+# roles/packages/defaults/main.yml::pacman_packages so `--tags fonts` covers
+# the whole feature (packages + fontconfig policy) on its own — same pattern
+# as python-fonttools in roles/packages/tasks/ms_cjk_alias_fonts.yml.
+fonts_pacman_packages:
+  - inter-font

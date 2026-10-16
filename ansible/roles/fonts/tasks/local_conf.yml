@@ -1,0 +1,17 @@
+---
+# /etc/fonts/local.conf is included by conf.d/51-local.conf (the include is
+# resolved against the config dir, strace-verified). Loading position 51 is
+# load-bearing: the <prefer> entries must be registered before 60-latin.conf,
+# otherwise they lose to the distro's generic-family lists (verified: the same
+# file at position 99 has no effect). fontconfig re-reads config per process —
+# no restart needed; the handler only warms the cache for a freshly installed
+# inter-font.
+- name: Deploy default font stack configuration
+  become: true
+  ansible.builtin.copy:
+    src: local.conf
+    dest: /etc/fonts/local.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Refresh font cache for fonts

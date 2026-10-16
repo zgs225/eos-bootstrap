@@ -338,6 +338,63 @@ To refresh (currently: 崇羲篆體 / Chong Xi Small Seal):
    fc-list | grep -i 'chong xi small seal'
    ```
 
+## Default font stacks (`fonts`)
+
+The `fonts` role installs `inter-font` (from `extra`) and deploys
+`/etc/fonts/local.conf`, which sets the three generic families:
+
+| generic family | preference order |
+|----------------|------------------|
+| `sans-serif` | Inter → Noto Sans CJK SC → DejaVu Sans |
+| `serif` | Source Han Serif CN → Noto Serif CJK SC → DejaVu Serif |
+| `monospace` | JetBrains Mono → JetBrainsMono Nerd Font → LXGW WenKai Mono → DejaVu Sans Mono |
+
+Apply (no `--ask-become-pass` needed — sudo is passwordless for `wheel`):
+
+```bash
+ansible-playbook ansible/playbook.yml --tags fonts           # package + config
+ansible-playbook ansible/playbook.yml --tags fonts_pacman    # inter-font only
+ansible-playbook ansible/playbook.yml --tags fonts_localconf # /etc/fonts/local.conf only
+```
+
+### Why `local.conf` and not a `conf.d/` drop-in
+
+`conf.d/51-local.conf` includes `local.conf`, so these stacks are registered at
+position **51** — before `60-latin.conf`/`60-generic.conf`. Move the same
+`<prefer>` lists into a `conf.d/6x-*.conf` (or into a prefix-less
+`conf.d/local.conf`, which sorts after every numbered file) and they lose to the
+distro's lists: `fc-match sans-serif` silently falls back to DejaVu Sans.
+Loading order is not cosmetic here; `fc-match` is what proves it.
+
+User-level overrides stay in `~/.config/fontconfig/fonts.conf` (dotfiles repo,
+loaded at 50 via `50-user.conf`). That file is processed *before* `local.conf`,
+so a user preference still outranks these system defaults. Do not move it into
+this repo — Ansible never writes under `~`.
+
+Explicit Windows/Office family requests are not affected: they keep resolving
+through `59-ms-cjk-alias.conf` plus the generated faces (see the next section).
+One generic-side change is expected: `fc-match ':charset=4e2d'` now resolves to
+Noto Sans CJK SC instead of Microsoft YaHei.
+
+### Verify
+
+```bash
+pacman -Q inter-font                 # inter-font 4.1-1
+fc-match 'Inter'                     # Inter.ttc: "Inter" "Regular"
+fc-match sans-serif                  # Inter
+fc-match serif                       # Source Han Serif CN
+fc-match monospace                   # JetBrains Mono
+fc-match -s monospace | head -4      # JetBrains Mono → JetBrainsMono Nerd Font → LXGW WenKai Mono → DejaVu Sans Mono
+fc-match ':charset=4e2d'             # Noto Sans CJK SC
+fc-match ':family=Microsoft YaHei'   # MicrosoftYaHei.otf (ms-cjk-alias, unchanged)
+```
+
+No restart and no `fc-cache` is needed for an alias change — fontconfig re-reads
+its configuration per process. The role's `Refresh font cache for fonts` handler
+(unique name; handler names share one namespace across roles) exists only for a
+freshly installed font package. Already-running applications keep the fonts they
+resolved earlier; restart them to pick up the new stacks.
+
 ## CJK alias fonts for WPS / Word documents (`ms-cjk-alias`)
 
 Chinese documents ask for fonts that cannot be installed (Microsoft's 宋体/

@@ -1,0 +1,17 @@
+---
+# NOTE: tags appear twice per block by design: on the include statement
+# (controls whether the include itself runs under --tags) and in apply:
+# (propagates them to the dynamically included inner tasks).
+- name: Install default font packages
+  ansible.builtin.include_tasks:
+    file: packages.yml
+    apply:
+      tags: [fonts, fonts_pacman]
+  tags: [fonts, fonts_pacman]
+
+- name: Deploy default font stacks
+  ansible.builtin.include_tasks:
+    file: local_conf.yml
+    apply:
+      tags: [fonts, fonts_localconf]
+  tags: [fonts, fonts_localconf]

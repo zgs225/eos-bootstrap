@@ -11,6 +11,7 @@
 
   roles:
     - role: packages
+    - role: fonts
     - role: mise
     - role: services
     - role: network
