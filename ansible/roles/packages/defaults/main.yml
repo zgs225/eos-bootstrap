@@ -138,6 +138,7 @@ pacman_packages:
   - fcitx5-gtk
   - fcitx5-qt
   - fcitx5-configtool
+  - fcitx5-rime
   - git
   - github-cli
   - base-devel
