@@ -206,6 +206,8 @@ pacman_packages:
   - mpv
   - nsxiv
   - satty
+  - remmina
+  - freerdp  # remmina's RDP plugin (optdep); remmina alone has no RDP support
   - scx-scheds  # sched-ext BPF schedulers (scx_lavd / scx_rusty / ...)
   - scx-tools  # scx_loader: DBus-managed systemd service for sched-ext
   - zram-generator  # systemd zram swap device generator
