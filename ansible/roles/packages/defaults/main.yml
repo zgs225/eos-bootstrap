@@ -270,6 +270,7 @@ aur_packages:
   - synology-drive-client
   - jira-cli
   - cypher-shell
+  - responsively-bin  # prebuilt AppImage; conflicts with `responsively`
 
 chongxi_seal_zip_name: chongxi_seal.zip
 chongxi_seal_otf_name: chongxi_seal.otf
