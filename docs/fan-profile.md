@@ -38,6 +38,15 @@ fan-profile set <档位>           # 切换（root；sudoers NOPASSWD 授权给 
 fan-profile probe               # 探测后端并输出名字（缓存于 /run/fan-profile/）
 fan-profile default [档位]       # 读/写 /etc/fan-profile/default
 fan-profile apply-default       # 应用开机默认（boot 单元）
+```
+
+**读路径缓存**：`status` 结果写入 `$XDG_RUNTIME_DIR/fan-profile.<uid>.status.json`
+（首行 epoch，次行 JSON），`FAN_PROFILE_CACHE_TTL`（默认 5s）内复用。一次冷调用约
+35 个 fork 子进程（hwmon 扫描 + 每标签一个 `cat` + JSON 转义），命中缓存后只剩
+一次 bash 启动。`set`/`apply-default`/`apply-resume` 会删除缓存。TTL=0 关闭缓存。
+
+下游消费者（`~/.config/eww/ewwstate/collectors/fanprofile.py`）直接读该文件，
+因此平台侧轮询不再每次触发 CLI。
 fan-profile apply-resume        # 恢复上次应用值（resume 单元；/run 缓存丢失时回落默认）
 ```
 

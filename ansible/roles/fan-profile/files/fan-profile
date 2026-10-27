@@ -27,6 +27,13 @@ DEFAULT_CONF=/etc/fan-profile/default
 # Probe priority: first adapter whose detect() succeeds wins.
 ADAPTER_ORDER="acpi-platform-profile asus-throttle thinkpad-fan hwmon-pwm readonly"
 
+# Read-path cache. `status` is polled by the eww state daemon, the rofi
+# launcher and the power popup, and one invocation costs ~35 forked helpers
+# (hwmon scan, per-label `cat`s, JSON quoting). Serve a recent answer instead.
+# Per-user file in tmpfs; TTL 0 disables it, `set`/`apply-*` invalidate it.
+CACHE_TTL=${FAN_PROFILE_CACHE_TTL:-5}
+CACHE_FILE="${XDG_RUNTIME_DIR:-${TMPDIR:-/tmp}}/fan-profile.${UID:-0}.status.json"
+
 # shellcheck source=/dev/null
 source "$LIB_DIR/lib/common.sh"
 
@@ -35,6 +42,8 @@ usage() {
 usage: fan-profile <command> [args]
 
   status              current policy + fans + temps (JSON, single line)
+                      served from a ${FAN_PROFILE_CACHE_TTL:-5}s cache; set
+                      FAN_PROFILE_CACHE_TTL=0 to always rescan
   choices             available policies (canonical, one per line)
   get                 current policy (canonical)
   set <policy>        apply policy (root)
@@ -78,7 +87,36 @@ adapter_get() { "$ADAPTERS_DIR/$(backend)" get 2>/dev/null || true; }
 
 adapter_set() { "$ADAPTERS_DIR/$(backend)" set "$1"; }
 
-record_applied() { echo "$1" >"$CACHE_DIR/last" 2>/dev/null || true; }
+record_applied() {
+    echo "$1" >"$CACHE_DIR/last" 2>/dev/null || true
+    cache_drop
+}
+
+# --- read-path cache -------------------------------------------------------
+
+# Prints the cached body and returns 0 when the entry is still fresh.
+cache_read() {
+    local ts body now
+    [ "${CACHE_TTL:-0}" -gt 0 ] 2>/dev/null || return 1
+    [ -r "$CACHE_FILE" ] || return 1
+    { read -r ts; read -r body; } <"$CACHE_FILE" 2>/dev/null || return 1
+    case "$ts" in
+        '' | *[!0-9]*) return 1 ;;
+    esac
+    printf -v now '%(%s)T' -1
+    [ $((now - ts)) -le "$CACHE_TTL" ] || return 1
+    [ -n "$body" ] || return 1
+    printf '%s\n' "$body"
+}
+
+cache_write() {
+    local now
+    [ "${CACHE_TTL:-0}" -gt 0 ] 2>/dev/null || return 0
+    printf -v now '%(%s)T' -1
+    printf '%s\n%s\n' "$now" "$1" >"$CACHE_FILE" 2>/dev/null || true
+}
+
+cache_drop() { rm -f "$CACHE_FILE" 2>/dev/null || true; }
 
 # --- commands ----------------------------------------------------------------
 
@@ -172,7 +210,10 @@ cmd_apply_resume() {
 }
 
 cmd_status() {
-    local b supported current choices_json fans_json temp current_json first
+    local b supported current choices_json fans_json temp current_json first out
+    if cache_read; then
+        return 0
+    fi
     b=$(backend)
     if [ "$b" = readonly ]; then
         supported=false
@@ -193,8 +234,10 @@ cmd_status() {
     fi
     fans_json=$(fan_status_json)
     temp=$(pkg_temp)
-    printf '{"backend":%s,"supported":%s,"current":%s,"choices":%s,"fans":[%s],"temp_c":%d}\n' \
-        "$(json_str "$b")" "$supported" "${current_json:-null}" "$choices_json" "$fans_json" "$temp"
+    out=$(printf '{"backend":%s,"supported":%s,"current":%s,"choices":%s,"fans":[%s],"temp_c":%d}' \
+        "$(json_str "$b")" "$supported" "${current_json:-null}" "$choices_json" "$fans_json" "$temp")
+    cache_write "$out"
+    printf '%s\n' "$out"
 }
 
 # --- dispatch -----------------------------------------------------------------
