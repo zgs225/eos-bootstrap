@@ -270,7 +270,6 @@ aur_packages:
   - buku
   - synology-drive-client
   - jira-cli
-  - cypher-shell
   - responsively-bin  # prebuilt AppImage; conflicts with `responsively`
   # Arto (repacked from the upstream release .deb, see tasks/arto.yml) links
   # against libxdo.so.3; repo `xdotool` ships only libxdo.so.4, and this AUR
