@@ -99,13 +99,22 @@
     mode: "0644"
   tags: [fan-profile]
 
-- name: Enable and start fan-profile services
+- name: Enable and start the fan-profile service
   ansible.builtin.systemd:
-    name: "{{ item }}"
+    name: fan-profile.service
     enabled: true
     state: started
     daemon_reload: true
-  loop:
-    - fan-profile.service
-    - fan-profile-resume.service
+  tags: [fan-profile]
+
+# fan-profile-resume.service is a Type=oneshot unit without RemainAfterExit and
+# is pulled in by suspend.target, so it is only ever started by a resume:
+# `state: started` would restart it on every playbook run (changed= on a
+# steady-state re-run), while RemainAfterExit=yes would make the first resume
+# the only one that ever applies the profile.
+- name: Enable the fan-profile resume service
+  ansible.builtin.systemd:
+    name: fan-profile-resume.service
+    enabled: true
+    daemon_reload: true
   tags: [fan-profile]
