@@ -22,12 +22,15 @@
       tags: [kernel, zram]
   tags: [kernel, zram]
 
+# /etc/kernel/cmdline is a systemd-boot/UKI (kernel-install) artifact. GRUB
+# hosts keep their command line in /etc/default/grub, so it is not there.
 - name: Configure kernel command line
   ansible.builtin.include_tasks:
     file: cmdline.yml
     apply:
       tags: [kernel, cmdline]
   tags: [kernel, cmdline]
+  when: kernel_cmdline_path is file
 
 - name: Configure /tmp backing store
   ansible.builtin.include_tasks:
