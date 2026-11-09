@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Lock the X session before suspend (deployed by the eos-bootstrap power
-# role to /etc/systemd/system-sleep/50-lock).
+# role to /usr/lib/systemd/system-sleep/50-lock — systemd >= 256 scans only
+# that directory, not /etc/systemd/system-sleep).
 #
 # Why forward to the user systemd manager instead of launching the locker
 # here? systemd-suspend.service is Type=oneshot with the default

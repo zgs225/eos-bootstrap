@@ -108,13 +108,21 @@
 # the session's lock-on-suspend.service user unit (chezmoi dotfiles repo),
 # which has its own cgroup and survives the sleep — backgrounding the
 # locker from a hook does not, systemd-suspend.service KillMode cleans up.
+# systemd >= 256 scans only /usr/lib/systemd/system-sleep;
+# /etc/systemd/system-sleep is neither created nor read any more.
 - name: Deploy lock-on-suspend system-sleep hook
   ansible.builtin.copy:
     src: sleep-lock
-    dest: /etc/systemd/system-sleep/50-lock
+    dest: /usr/lib/systemd/system-sleep/50-lock
     owner: root
     group: root
     mode: "0755"
+  tags: [power]
+
+- name: Remove lock-on-suspend hook from the pre-systemd-256 location
+  ansible.builtin.file:
+    path: /etc/systemd/system-sleep/50-lock
+    state: absent
   tags: [power]
 
 # NVIDIA open + platform s2idle: enable GPU S0ix so lid-close suspend does
