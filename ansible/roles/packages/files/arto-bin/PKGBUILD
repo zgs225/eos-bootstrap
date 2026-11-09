@@ -1,0 +1,64 @@
+# Maintainer: local packaging — repacks the upstream release .deb.
+# Upstream ships .deb/.AppImage/raw binary only; there is no AUR package.
+# Bump pkgver + sha256sums on each release:
+#   curl -sLO https://github.com/arto-app/Arto/releases/download/v<ver>/arto_<ver>_amd64.deb
+#   sha256sum arto_<ver>_amd64.deb
+
+pkgname=arto-bin
+pkgver=0.43.1
+pkgrel=1
+pkgdesc='A GitHub Markdown viewer that renders locally and offline (prebuilt upstream release)'
+arch=('x86_64')  # add 'aarch64' + sha256sums_aarch64 if ever needed
+url='https://arto-app.github.io'
+license=('MIT')
+depends=(
+  'webkit2gtk-4.1'
+  'gtk3'
+  'libsoup3'
+  'glib2'
+  'glibc'
+  'gcc-libs'
+  'openssl'
+  'cairo'
+  'pango'
+  'gdk-pixbuf2'
+  'libxcb'
+  'libxdo3'   # AUR: upstream links against libxdo.so.3, repo xdotool only ships .so.4
+)
+provides=('arto')
+conflicts=('arto')
+options=('!strip')  # release binary is already stripped; stripping again is wasted time
+
+case "$CARCH" in
+  x86_64)  _debarch=amd64 ;;
+  aarch64) _debarch=arm64 ;;
+esac
+_debfile="arto_${pkgver}_${_debarch}.deb"
+
+source=(
+  "${_debfile}::https://github.com/arto-app/Arto/releases/download/v${pkgver}/${_debfile}"
+  "LICENSE::https://raw.githubusercontent.com/arto-app/Arto/v${pkgver}/LICENSE"
+)
+sha256sums=('948307dcc09ecb0dcbd3b4146abaa0878872394ca80f92dc54c89ba88be39cbb'
+                   'SKIP')
+
+package() {
+  cd "${srcdir}"
+
+  # .deb = ar archive of debian-binary + control.tar.gz + data.tar.gz
+  ar x "${_debfile}"
+  bsdtar xf data.tar.gz -C "${pkgdir}" --no-same-owner
+
+  # Drop the empty Debian-only directory.
+  rmdir "${pkgdir}/usr/lib/Arto" 2>/dev/null || true
+
+  install -Dm644 "${srcdir}/LICENSE" \
+    "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+
+  # Upstream's .desktop declares no MimeType, so nothing on Linux registers it
+  # as a handler for Markdown. Add it here so xdg-mime / file managers see it.
+  sed -i 's|^Icon=arto$|Icon=arto\nMimeType=text/markdown;|' \
+    "${pkgdir}/usr/share/applications/arto.desktop"
+  sed -i 's|^Categories=.*|Categories=Utility;TextTools;Viewer;|' \
+    "${pkgdir}/usr/share/applications/arto.desktop"
+}

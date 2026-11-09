@@ -31,6 +31,13 @@
       tags: [packages, aur]
   tags: [packages, aur]
 
+- name: Install Arto Markdown viewer (repacked upstream .deb)
+  ansible.builtin.include_tasks:
+    file: arto.yml
+    apply:
+      tags: [packages, arto]
+  tags: [packages, arto]
+
 - name: Install chongxi seal font
   ansible.builtin.include_tasks:
     file: chongxi_seal.yml

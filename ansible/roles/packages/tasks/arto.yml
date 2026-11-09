@@ -1,0 +1,76 @@
+---
+# Arto (https://github.com/arto-app/arto) is a GitHub-style Markdown reader
+# whose Linux releases are a .deb, an AppImage and a bare binary — no pacman
+# package and no AUR entry. The PKGBUILD in files/arto-bin/ repacks the
+# upstream .deb, and does two things the .deb does not:
+#   1. adds `MimeType=text/markdown;` to arto.desktop (upstream ships none, so
+#      nothing on Linux even registers Arto as a Markdown handler);
+#   2. pulls in the license file and drops the empty /usr/lib/Arto directory.
+# The default handler itself is user state and lives in the dotfiles
+# (~/.config/mimeapps.list → text/markdown=arto.desktop).
+#
+# Bumping: edit pkgver + sha256sums in files/arto-bin/PKGBUILD; the tasks
+# below rebuild and reinstall only when the packaged version differs from
+# what pacman has.
+- name: Ensure the arto-bin build directory exists
+  ansible.builtin.file:
+    path: "{{ arto_build_dir }}"
+    state: directory
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: "0755"
+
+- name: Deploy the arto-bin PKGBUILD
+  ansible.builtin.copy:
+    src: arto-bin/PKGBUILD
+    dest: "{{ arto_build_dir }}/PKGBUILD"
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: "0644"
+
+- name: Read the packaged arto-bin version
+  ansible.builtin.shell: |
+    set -o pipefail
+    source {{ arto_build_dir }}/PKGBUILD && echo "${pkgver}-${pkgrel}"
+  args:
+    executable: /bin/bash
+  register: arto_wanted_version
+  changed_when: false
+  check_mode: false
+
+- name: Check the installed arto-bin version
+  ansible.builtin.shell: |
+    set -o pipefail
+    pacman -Q arto-bin 2>/dev/null | awk '{print $2}' || echo "none"
+  register: arto_installed_version
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Build arto-bin from the upstream .deb
+  become: true
+  become_user: "{{ target_user }}"
+  ansible.builtin.shell: |
+    set -o pipefail
+    cd {{ arto_build_dir }}
+    makepkg -sf --noconfirm
+  when: arto_installed_version.stdout != arto_wanted_version.stdout
+  changed_when: false
+  check_mode: false
+
+- name: Find the built arto-bin package
+  ansible.builtin.shell: |
+    set -o pipefail
+    ls -1t {{ arto_build_dir }}/arto-bin-*.pkg.tar.zst | head -1
+  register: arto_pkg_file
+  changed_when: false
+  when: arto_installed_version.stdout != arto_wanted_version.stdout
+
+- name: Install arto-bin from the local package
+  become: true
+  ansible.builtin.command:
+    cmd: pacman -U --noconfirm {{ arto_pkg_file.stdout }}
+  when:
+    - arto_pkg_file is not skipped
+    - arto_pkg_file.stdout | default('') | length > 0
+  changed_when: true
