@@ -1,0 +1,14 @@
+#!/bin/bash
+# Upgrade the locally repacked Arto package by running the eos-bootstrap role
+# that owns it. The checkout path is baked in at install time, so re-run the
+# playbook if the repository moves.
+#
+# Called from the eww update widget (dotfiles:
+# ~/.config/eww/scripts/update-apply.sh) so a package that lives outside both
+# the repos and the AUR still rides along with `paru -Syu`.
+#
+#   arto-upgrade           # upgrade to the latest upstream release
+#   arto-upgrade --check   # dry run, changes nothing
+set -uo pipefail
+
+exec ansible-playbook "{{ arto_repo_dir }}/ansible/playbook.yml" --tags arto "$@"

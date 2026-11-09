@@ -277,8 +277,17 @@ aur_packages:
   # package is the only provider of the v3 soname.
   - libxdo3
 
-# Where tasks/arto.yml builds arto-bin from files/arto-bin/PKGBUILD.
+# Arto: a locally repacked package with no repo or AUR entry.
+#   arto_track_upstream — follow the latest GitHub release (true) or leave
+#     whatever is installed alone (false). While on, the PKGBUILD is rendered
+#     from the release API, so nothing here pins a version.
+#   arto_build_dir — where tasks/arto.yml renders templates/arto-bin/PKGBUILD.j2
+#     and runs makepkg.
+#   arto_repo_dir — baked into /usr/local/bin/arto-upgrade so the eww update
+#     widget can run this role from outside the checkout.
+arto_track_upstream: true
 arto_build_dir: /tmp/arto-bin-build
+arto_repo_dir: "{{ playbook_dir | dirname }}"
 
 chongxi_seal_zip_name: chongxi_seal.zip
 chongxi_seal_otf_name: chongxi_seal.otf

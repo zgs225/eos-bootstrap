@@ -1,14 +1,19 @@
-# Maintainer: local packaging — repacks the upstream release .deb.
-# Upstream ships .deb/.AppImage/raw binary only; there is no AUR package.
-# Bump pkgver + sha256sums on each release:
-#   curl -sLO https://github.com/arto-app/Arto/releases/download/v<ver>/arto_<ver>_amd64.deb
-#   sha256sum arto_<ver>_amd64.deb
+# Rendered by eos-bootstrap (ansible/roles/packages/tasks/arto.yml) from the
+# upstream GitHub release API: pkgver and sha256sums come from the API, so
+# there is no version to bump here. Edit this template, not the copy in
+# {{ arto_build_dir }}/.
+#
+# Upstream ships .deb/.AppImage/bare binary for Linux only — no pacman package
+# and no AUR entry. This PKGBUILD repacks the .deb and fixes two things it
+# gets wrong for a pacman system: the shipped .desktop has no MimeType (so
+# nothing registers Arto as a Markdown handler) and it carries an empty
+# /usr/lib/Arto directory.
 
 pkgname=arto-bin
-pkgver=0.43.1
+pkgver={{ arto_ver }}
 pkgrel=1
 pkgdesc='A GitHub Markdown viewer that renders locally and offline (prebuilt upstream release)'
-arch=('x86_64')  # add 'aarch64' + sha256sums_aarch64 if ever needed
+arch=('{{ arto_arch }}')
 url='https://arto-app.github.io'
 license=('MIT')
 depends=(
@@ -29,18 +34,14 @@ provides=('arto')
 conflicts=('arto')
 options=('!strip')  # release binary is already stripped; stripping again is wasted time
 
-case "$CARCH" in
-  x86_64)  _debarch=amd64 ;;
-  aarch64) _debarch=arm64 ;;
-esac
-_debfile="arto_${pkgver}_${_debarch}.deb"
+_debfile="arto_${pkgver}_{{ arto_deb_arch }}.deb"
 
 source=(
   "${_debfile}::https://github.com/arto-app/Arto/releases/download/v${pkgver}/${_debfile}"
   "LICENSE::https://raw.githubusercontent.com/arto-app/Arto/v${pkgver}/LICENSE"
 )
-sha256sums=('948307dcc09ecb0dcbd3b4146abaa0878872394ca80f92dc54c89ba88be39cbb'
-                   'SKIP')
+sha256sums=('{{ arto_deb_sha }}'
+            'SKIP')
 
 package() {
   cd "${srcdir}"

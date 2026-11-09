@@ -1,76 +1,154 @@
 ---
 # Arto (https://github.com/arto-app/arto) is a GitHub-style Markdown reader
 # whose Linux releases are a .deb, an AppImage and a bare binary — no pacman
-# package and no AUR entry. The PKGBUILD in files/arto-bin/ repacks the
-# upstream .deb, and does two things the .deb does not:
-#   1. adds `MimeType=text/markdown;` to arto.desktop (upstream ships none, so
-#      nothing on Linux even registers Arto as a Markdown handler);
-#   2. pulls in the license file and drops the empty /usr/lib/Arto directory.
-# The default handler itself is user state and lives in the dotfiles
-# (~/.config/mimeapps.list → text/markdown=arto.desktop).
+# package and no AUR entry, so it is repacked here from the upstream .deb.
 #
-# Bumping: edit pkgver + sha256sums in files/arto-bin/PKGBUILD; the tasks
-# below rebuild and reinstall only when the packaged version differs from
-# what pacman has.
-- name: Ensure the arto-bin build directory exists
-  ansible.builtin.file:
-    path: "{{ arto_build_dir }}"
-    state: directory
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: "0755"
-
-- name: Deploy the arto-bin PKGBUILD
-  ansible.builtin.copy:
-    src: arto-bin/PKGBUILD
-    dest: "{{ arto_build_dir }}/PKGBUILD"
-    owner: "{{ target_user }}"
-    group: "{{ target_user }}"
-    mode: "0644"
-
-- name: Read the packaged arto-bin version
-  ansible.builtin.shell: |
-    set -o pipefail
-    source {{ arto_build_dir }}/PKGBUILD && echo "${pkgver}-${pkgrel}"
-  args:
-    executable: /bin/bash
-  register: arto_wanted_version
-  changed_when: false
-  check_mode: false
-
-- name: Check the installed arto-bin version
-  ansible.builtin.shell: |
-    set -o pipefail
-    pacman -Q arto-bin 2>/dev/null | awk '{print $2}' || echo "none"
-  register: arto_installed_version
-  changed_when: false
+# Nothing in this file is pinned to a version. The tasks ask the GitHub release
+# API for the latest release, then render templates/arto-bin/PKGBUILD.j2 with
+# that version and with the sha256 digest GitHub publishes for the .deb asset
+# (the release JSON carries `digest`, so 19 MB never has to be downloaded just
+# to checksum it). A plain bootstrap.sh — or `--tags arto` — therefore keeps
+# Arto at upstream's latest with nothing to bump by hand. Set
+# arto_track_upstream: false to freeze whatever is installed.
+#
+# The role also installs two helpers that let the desktop notice and install
+# the upgrade: arto-check-update (a checkupdates-style line the eww update
+# widget folds into its list) and arto-upgrade (paru picks it up after a
+# system upgrade). See dotfiles ~/.config/eww/scripts/.
+- name: Query the latest Arto release
+  ansible.builtin.uri:
+    url: https://api.github.com/repos/arto-app/Arto/releases/latest
+    headers:
+      Accept: application/vnd.github+json
+    return_content: true
+    timeout: 15
+  register: arto_release
+  retries: 2
+  delay: 3
+  until: arto_release.status | default(0) == 200
   failed_when: false
-  check_mode: false
-
-- name: Build arto-bin from the upstream .deb
-  become: true
-  become_user: "{{ target_user }}"
-  ansible.builtin.shell: |
-    set -o pipefail
-    cd {{ arto_build_dir }}
-    makepkg -sf --noconfirm
-  when: arto_installed_version.stdout != arto_wanted_version.stdout
   changed_when: false
-  check_mode: false
+  when: arto_track_upstream | bool
 
-- name: Find the built arto-bin package
-  ansible.builtin.shell: |
-    set -o pipefail
-    ls -1t {{ arto_build_dir }}/arto-bin-*.pkg.tar.zst | head -1
-  register: arto_pkg_file
-  changed_when: false
-  when: arto_installed_version.stdout != arto_wanted_version.stdout
-
-- name: Install arto-bin from the local package
-  become: true
-  ansible.builtin.command:
-    cmd: pacman -U --noconfirm {{ arto_pkg_file.stdout }}
+- name: Warn that the latest Arto release could not be read
+  ansible.builtin.debug:
+    msg: >-
+      Could not read the latest Arto release from GitHub (status
+      {{ arto_release.status | default('unknown') }}); keeping the installed
+      version. Re-run with network access to upgrade.
   when:
-    - arto_pkg_file is not skipped
-    - arto_pkg_file.stdout | default('') | length > 0
-  changed_when: true
+    - arto_track_upstream | bool
+    - arto_release.status | default(0) != 200
+
+- name: Keep Arto at the latest upstream release
+  when:
+    - arto_track_upstream | bool
+    - arto_release.status | default(0) == 200
+  block:
+    - name: Resolve the release version, pacman architecture and .deb asset
+      ansible.builtin.set_fact:
+        arto_ver: "{{ arto_release.json.tag_name | regex_replace('^v', '') }}"
+        arto_arch: "{{ ansible_facts['architecture'] }}"
+        arto_deb_arch: >-
+          {{ 'amd64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' }}
+
+    - name: Read the published sha256 digest of the .deb asset
+      ansible.builtin.set_fact:
+        arto_deb_sha: >-
+          {{ arto_release.json.assets
+             | selectattr('name', 'equalto',
+                 'arto_' ~ arto_ver ~ '_' ~ arto_deb_arch ~ '.deb')
+             | map(attribute='digest')
+             | map('default', '', true)
+             | first
+             | default('', true)
+             | regex_replace('^sha256:', '') }}
+
+    - name: Fail when the release carries no usable .deb digest
+      ansible.builtin.fail:
+        msg: >-
+          Release v{{ arto_ver }} has no sha256 digest for
+          arto_{{ arto_ver }}_{{ arto_deb_arch }}.deb; refusing to build an
+          unverified package.
+      when: arto_deb_sha | length == 0
+
+    - name: Ensure the arto-bin build directory exists
+      ansible.builtin.file:
+        path: "{{ arto_build_dir }}"
+        state: directory
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: "0755"
+
+    - name: Render the arto-bin PKGBUILD at the upstream version
+      ansible.builtin.template:
+        src: arto-bin/PKGBUILD.j2
+        dest: "{{ arto_build_dir }}/PKGBUILD"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: "0644"
+
+    - name: Read the packaged arto-bin version
+      ansible.builtin.shell: |
+        set -o pipefail
+        source {{ arto_build_dir }}/PKGBUILD && echo "${pkgver}-${pkgrel}"
+      args:
+        executable: /bin/bash
+      register: arto_wanted_version
+      changed_when: false
+      check_mode: false
+
+    - name: Check the installed arto-bin version
+      ansible.builtin.shell: |
+        set -o pipefail
+        pacman -Q arto-bin 2>/dev/null | awk '{print $2}' || echo "none"
+      register: arto_installed_version
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: Build arto-bin from the upstream .deb
+      become: true
+      become_user: "{{ target_user }}"
+      ansible.builtin.shell: |
+        set -o pipefail
+        cd {{ arto_build_dir }}
+        makepkg -sf --noconfirm
+      when: arto_installed_version.stdout != arto_wanted_version.stdout
+      changed_when: false
+      check_mode: false
+
+    - name: Find the built arto-bin package
+      ansible.builtin.shell: |
+        set -o pipefail
+        ls -1t {{ arto_build_dir }}/arto-bin-*.pkg.tar.zst | head -1
+      register: arto_pkg_file
+      changed_when: false
+      when: arto_installed_version.stdout != arto_wanted_version.stdout
+
+    - name: Install arto-bin from the local package
+      become: true
+      ansible.builtin.command:
+        cmd: pacman -U --noconfirm {{ arto_pkg_file.stdout }}
+      when:
+        - arto_pkg_file is not skipped
+        - arto_pkg_file.stdout | default('') | length > 0
+      changed_when: true
+
+- name: Install the Arto update helpers
+  block:
+    - name: Install arto-check-update
+      ansible.builtin.copy:
+        src: arto/arto-check-update
+        dest: /usr/local/bin/arto-check-update
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install arto-upgrade
+      ansible.builtin.template:
+        src: arto/arto-upgrade.j2
+        dest: /usr/local/bin/arto-upgrade
+        owner: root
+        group: root
+        mode: "0755"
