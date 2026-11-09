@@ -1,4 +1,12 @@
 ---
+# Arch ships none of these groups on its own (plugdev is a Debian-ism), so
+# user_groups has to be able to name groups no package creates.
+- name: Ensure user groups exist
+  ansible.builtin.group:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ user_groups }}"
+
 - name: Ensure target_user exists
   ansible.builtin.user:
     name: "{{ target_user }}"
