@@ -1,0 +1,48 @@
+# Rendered by eos-bootstrap (ansible/roles/packages/tasks/bowel.yml) from the
+# upstream GitHub release API: pkgver and sha256sums come from the API, so
+# there is no version to bump here. Edit this template, not the copy in
+# {{ bowel_build_dir }}/.
+#
+# Upstream ships .deb/.rpm/.tar.gz for Linux only — no pacman package and no
+# AUR entry (the repo's scripts/render-aur.sh renders a bowel-bin PKGBUILD that
+# was never published). The .deb's own Depends (libgtk-3-0,
+# libwebkit2gtk-4.1-0) are stale: the binary links libc/libdl/libpthread only
+# and draws through the GPU itself, so nothing but glibc is required here.
+#
+# The package installs the app *and* its mihomo core under /opt/bowel, the
+# layout upstream's own .desktop and updater expect; the core is copied into
+# the user's data directory (and given file capabilities) when TUN is turned
+# on for the first time.
+
+pkgname=bowel-bin
+pkgver={{ bowel_ver }}
+pkgrel=1
+pkgdesc='A mihomo client, with the mihomo core bundled (prebuilt upstream release)'
+arch=('{{ bowel_arch }}')
+url='https://bowel.dev'
+license=('custom:PolyForm-Noncommercial-1.0.0')
+depends=('glibc')
+provides=('bowel')
+conflicts=('bowel')
+options=('!strip' '!debug')  # release binaries are already stripped
+
+_debfile="bowel_${pkgver}_{{ bowel_deb_arch }}.deb"
+
+source=(
+  "${_debfile}::https://github.com/21stware/bowel/releases/download/v${pkgver}/${_debfile}"
+  "LICENSE::https://raw.githubusercontent.com/21stware/bowel/v${pkgver}/LICENSE"
+)
+sha256sums=('{{ bowel_deb_sha }}'
+            'SKIP')
+
+package() {
+  cd "${srcdir}"
+
+  # .deb = ar archive of debian-binary + control.tar.gz + data.tar.gz
+  ar x "${_debfile}"
+  bsdtar xf data.tar.gz -C "${pkgdir}" --no-same-owner
+
+  # The .deb ships no licence of its own for bowel (only mihomo's).
+  install -Dm644 "${srcdir}/LICENSE" \
+    "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}

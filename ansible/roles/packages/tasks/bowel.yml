@@ -1,0 +1,139 @@
+---
+# bowel (https://github.com/21stware/bowel) is a mihomo client whose Linux
+# releases are a .deb, an .rpm and a .tar.gz — no pacman package and no AUR
+# entry, so it is repacked here from the upstream .deb, the same way Arto is
+# (tasks/arto.yml).
+#
+# Nothing in this file is pinned to a version. The tasks ask the GitHub release
+# API for the latest release, then render templates/bowel-bin/PKGBUILD.j2 with
+# that version and with the sha256 digest GitHub publishes for the .deb asset
+# (the release JSON carries `digest`, so 49 MB never has to be downloaded just
+# to checksum it). A plain bootstrap.sh — or `--tags bowel` — therefore keeps
+# bowel at upstream's latest with nothing to bump by hand. Set
+# bowel_track_upstream: false to freeze whatever is installed.
+#
+# bowel bundles its own mihomo core and takes over either the desktop's proxy
+# settings or a TUN device, so it must not run at the same time as
+# clash-verge-rev: the two would fight over ports, routes and the resolver.
+# Installing both is fine — running both is not.
+- name: Query the latest bowel release
+  ansible.builtin.uri:
+    url: https://api.github.com/repos/21stware/bowel/releases/latest
+    headers:
+      Accept: application/vnd.github+json
+    return_content: true
+    timeout: 15
+  register: bowel_release
+  retries: 2
+  delay: 3
+  until: bowel_release.status | default(0) == 200
+  failed_when: false
+  changed_when: false
+  when: bowel_track_upstream | bool
+
+- name: Warn that the latest bowel release could not be read
+  ansible.builtin.debug:
+    msg: >-
+      Could not read the latest bowel release from GitHub (status
+      {{ bowel_release.status | default('unknown') }}); keeping the installed
+      version. Re-run with network access to upgrade.
+  when:
+    - bowel_track_upstream | bool
+    - bowel_release.status | default(0) != 200
+
+- name: Keep bowel at the latest upstream release
+  when:
+    - bowel_track_upstream | bool
+    - bowel_release.status | default(0) == 200
+  block:
+    - name: Resolve the release version, pacman architecture and .deb asset
+      ansible.builtin.set_fact:
+        bowel_ver: >-
+          {{ bowel_release.json.tag_name | regex_replace('^v', '') }}
+        bowel_arch: "{{ ansible_facts['architecture'] }}"
+        bowel_deb_arch: >-
+          {{ 'amd64' if ansible_facts['architecture'] == 'x86_64'
+             else 'arm64' }}
+
+    - name: Read the published sha256 digest of the .deb asset
+      ansible.builtin.set_fact:
+        bowel_deb_sha: >-
+          {{ bowel_release.json.assets
+             | selectattr('name', 'equalto',
+                 'bowel_' ~ bowel_ver ~ '_' ~ bowel_deb_arch ~ '.deb')
+             | map(attribute='digest')
+             | map('default', '', true)
+             | first
+             | default('', true)
+             | regex_replace('^sha256:', '') }}
+
+    - name: Fail when the release carries no usable .deb digest
+      ansible.builtin.fail:
+        msg: >-
+          Release v{{ bowel_ver }} has no sha256 digest for
+          bowel_{{ bowel_ver }}_{{ bowel_deb_arch }}.deb; refusing to build an
+          unverified package.
+      when: bowel_deb_sha | length == 0
+
+    - name: Ensure the bowel-bin build directory exists
+      ansible.builtin.file:
+        path: "{{ bowel_build_dir }}"
+        state: directory
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: "0755"
+
+    - name: Render the bowel-bin PKGBUILD at the upstream version
+      ansible.builtin.template:
+        src: bowel-bin/PKGBUILD.j2
+        dest: "{{ bowel_build_dir }}/PKGBUILD"
+        owner: "{{ target_user }}"
+        group: "{{ target_user }}"
+        mode: "0644"
+
+    - name: Read the packaged bowel-bin version
+      ansible.builtin.shell: |
+        set -o pipefail
+        source {{ bowel_build_dir }}/PKGBUILD && echo "${pkgver}-${pkgrel}"
+      args:
+        executable: /bin/bash
+      register: bowel_wanted_version
+      changed_when: false
+      check_mode: false
+
+    - name: Check the installed bowel-bin version
+      ansible.builtin.shell: |
+        set -o pipefail
+        pacman -Q bowel-bin 2>/dev/null | awk '{print $2}' || echo "none"
+      register: bowel_installed_version
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: Build bowel-bin from the upstream .deb
+      become: true
+      become_user: "{{ target_user }}"
+      ansible.builtin.shell: |
+        set -o pipefail
+        cd {{ bowel_build_dir }}
+        makepkg -sf --noconfirm
+      when: bowel_installed_version.stdout != bowel_wanted_version.stdout
+      changed_when: false
+      check_mode: false
+
+    - name: Find the built bowel-bin package
+      ansible.builtin.shell: |
+        set -o pipefail
+        ls -1t {{ bowel_build_dir }}/bowel-bin-*.pkg.tar.zst | head -1
+      register: bowel_pkg_file
+      changed_when: false
+      when: bowel_installed_version.stdout != bowel_wanted_version.stdout
+
+    - name: Install bowel-bin from the local package
+      become: true
+      ansible.builtin.command:
+        cmd: pacman -U --noconfirm {{ bowel_pkg_file.stdout }}
+      when:
+        - bowel_pkg_file is not skipped
+        - bowel_pkg_file.stdout | default('') | length > 0
+      changed_when: true

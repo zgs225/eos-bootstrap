@@ -38,6 +38,13 @@
       tags: [packages, arto]
   tags: [packages, arto]
 
+- name: Install bowel mihomo client (repacked upstream .deb)
+  ansible.builtin.include_tasks:
+    file: bowel.yml
+    apply:
+      tags: [packages, bowel]
+  tags: [packages, bowel]
+
 - name: Install chongxi seal font
   ansible.builtin.include_tasks:
     file: chongxi_seal.yml

@@ -292,6 +292,17 @@ arto_track_upstream: true
 arto_build_dir: /tmp/arto-bin-build
 arto_repo_dir: "{{ playbook_dir | dirname }}"
 
+# bowel: a locally repacked package with no repo or AUR entry (see
+# tasks/bowel.yml). It bundles its own mihomo core, so clash-verge-rev must not
+# run at the same time — installing both is fine, running both is not.
+#   bowel_track_upstream — follow the latest GitHub release (true) or leave
+#     whatever is installed alone (false). While on, the PKGBUILD is rendered
+#     from the release API, so nothing here pins a version.
+#   bowel_build_dir — where tasks/bowel.yml renders
+#     templates/bowel-bin/PKGBUILD.j2 and runs makepkg.
+bowel_track_upstream: true
+bowel_build_dir: /tmp/bowel-bin-build
+
 chongxi_seal_zip_name: chongxi_seal.zip
 chongxi_seal_otf_name: chongxi_seal.otf
 chongxi_seal_install_dir: /usr/local/share/fonts/chongxi
