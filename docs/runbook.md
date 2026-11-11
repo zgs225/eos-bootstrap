@@ -44,6 +44,38 @@ optional_services:
   - <service>.service
 ```
 
+## Add an insecure (HTTP) registry
+
+dockerd refuses plain-HTTP registries unless they are whitelisted. The `docker`
+role renders `docker_daemon_config` to `/etc/docker/daemon.json`:
+
+```yaml
+# ansible/roles/docker/defaults/main.yml
+docker_daemon_config:
+  insecure-registries:
+    - "172.16.21.59:8080"
+```
+
+Address only, **no** `http://` scheme — dockerd rejects scheme-prefixed entries.
+
+The whitelist does not bypass authentication: `docker login <host:port>` is
+still needed, and credentials land in `~/.docker/config.json`, which is
+user-scoped and therefore not managed by this repo.
+
+```bash
+ansible-playbook ansible/playbook.yml --tags docker   # deploy + validate + restart
+docker info | grep -A3 'Insecure Registries'
+```
+
+The role runs `dockerd --validate` before the restart handler, so a malformed
+file fails the play while the running daemon keeps its previous config. The
+tell that plain HTTP is in use is the scheme in a pull error:
+
+```bash
+docker pull 172.16.21.59:8080/probe:latest
+# Error response from daemon: … HEAD request to http://172.16.21.59:8080/v2/probe/…
+```
+
 ## Add a NetworkManager connection
 
 Drop a `.nmconnection` file into `ansible/roles/network/files/nmconnection/`. Permissions are forced to `0600` (root) at deploy time.

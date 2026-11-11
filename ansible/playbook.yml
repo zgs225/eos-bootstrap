@@ -13,6 +13,7 @@
     - role: packages
     - role: fonts
     - role: mise
+    - role: docker
     - role: services
     - role: network
     - role: kernel

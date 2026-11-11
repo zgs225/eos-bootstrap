@@ -1,0 +1,27 @@
+---
+- name: Ensure /etc/docker exists
+  ansible.builtin.file:
+    path: "{{ docker_daemon_json | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  tags: [docker]
+
+- name: Deploy dockerd configuration
+  ansible.builtin.template:
+    src: daemon.json.j2
+    dest: "{{ docker_daemon_json }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart docker daemon
+  tags: [docker]
+
+# Fails the play before the handler, so a bad edit never takes docker down.
+- name: Validate dockerd configuration
+  ansible.builtin.command:
+    cmd: "dockerd --validate --config-file={{ docker_daemon_json }}"
+  changed_when: false
+  check_mode: false
+  tags: [docker]
