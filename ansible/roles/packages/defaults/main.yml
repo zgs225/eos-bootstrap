@@ -203,6 +203,10 @@ pacman_packages:
   - polkit-gnome
   - zathura
   - zathura-pdf-poppler
+  # `mimetype`: xdg-open's generic backend (no DE ⇒ i3) probes file types with
+  # mimetype, then falls back to `file`, which reports .md as text/plain — the
+  # text/markdown=MimeType arto declares would never match (see tasks/arto.yml).
+  - perl-file-mimeinfo
   - mpv
   - nsxiv
   - satty
