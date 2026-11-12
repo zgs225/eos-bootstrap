@@ -1,0 +1,36 @@
+#!/bin/bash
+# Report a pending bowel upgrade for tools that only know about the repos and
+# the AUR — chiefly the eww update widget, which builds its list from
+# `checkupdates` and `paru -Qua`
+# (dotfiles: ~/.config/eww/scripts/check-updates.sh).
+#
+# bowel is repacked locally from upstream's release .deb by eos-bootstrap
+# (ansible/roles/packages/tasks/bowel.yml), so pacman has no repository to ask
+# and neither of those two commands can see it. This prints a
+# checkupdates-style line only when the installed version is behind the latest
+# GitHub release (same shape as `checkupdates` / `paru -Qu` output, so the
+# widget's line parser reads it unchanged):
+#
+#   bowel-bin 0.4.1-1 -> 0.4.2
+#
+# Silent, exit 0, when up to date / not installed / offline: a widget that
+# cannot reach the API should show nothing rather than guess.
+set -uo pipefail
+
+repo=21stware/bowel
+
+installed=$(pacman -Q bowel-bin 2>/dev/null | awk '{print $2}')
+[ -n "$installed" ] || exit 0
+
+latest=$(curl -fsS --max-time 10 \
+        -H 'Accept: application/vnd.github+json' \
+        "https://api.github.com/repos/${repo}/releases/latest" 2>/dev/null \
+    | jq -r '.tag_name // empty' 2>/dev/null \
+    | sed 's/^v//')
+[ -n "$latest" ] || exit 0
+
+# Compare versions without the local pkgrel: "0.4.1-1" → "0.4.1".
+if [ "$(vercmp "${installed%-*}" "$latest")" -lt 0 ]; then
+    printf '%s %s -> %s\n' bowel-bin "$installed" "$latest"
+fi
+exit 0

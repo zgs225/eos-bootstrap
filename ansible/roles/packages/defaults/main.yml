@@ -300,8 +300,11 @@ arto_repo_dir: "{{ playbook_dir | dirname }}"
 #     from the release API, so nothing here pins a version.
 #   bowel_build_dir — where tasks/bowel.yml renders
 #     templates/bowel-bin/PKGBUILD.j2 and runs makepkg.
+#   bowel_repo_dir — baked into /usr/local/bin/bowel-upgrade so the eww update
+#     widget can run this role from outside the checkout.
 bowel_track_upstream: true
 bowel_build_dir: /tmp/bowel-bin-build
+bowel_repo_dir: "{{ playbook_dir | dirname }}"
 
 chongxi_seal_zip_name: chongxi_seal.zip
 chongxi_seal_otf_name: chongxi_seal.otf

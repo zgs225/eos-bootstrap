@@ -12,6 +12,15 @@
 # bowel at upstream's latest with nothing to bump by hand. Set
 # bowel_track_upstream: false to freeze whatever is installed.
 #
+# The role also installs two helpers that let the desktop notice and install
+# the upgrade: bowel-check-update (a checkupdates-style line the eww update
+# widget folds into its list) and bowel-upgrade (paru picks it up after a
+# system upgrade). See dotfiles ~/.config/eww/scripts/. The app also ships its
+# own updater (mygo, signed manifests at releases/latest/download/), but it
+# rewrites the executable in place — root-owned /opt/bowel, which the user
+# cannot write, and a silent desync from pacman's database. Keep pacman as the
+# single source of truth and let this role do the upgrading.
+#
 # bowel bundles its own mihomo core and takes over either the desktop's proxy
 # settings or a TUN device, so it must not run at the same time as
 # clash-verge-rev: the two would fight over ports, routes and the resolver.
@@ -137,3 +146,21 @@
         - bowel_pkg_file is not skipped
         - bowel_pkg_file.stdout | default('') | length > 0
       changed_when: true
+
+- name: Install the bowel update helpers
+  block:
+    - name: Install bowel-check-update
+      ansible.builtin.copy:
+        src: bowel/bowel-check-update
+        dest: /usr/local/bin/bowel-check-update
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install bowel-upgrade
+      ansible.builtin.template:
+        src: bowel/bowel-upgrade.j2
+        dest: /usr/local/bin/bowel-upgrade
+        owner: root
+        group: root
+        mode: "0755"
