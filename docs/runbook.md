@@ -293,6 +293,43 @@ The pacman hook `/etc/pacman.d/hooks/focaltech-libfprint-restore.hook`
 (deployed by the role) re-injects the driver automatically after every future
 libfprint upgrade, so this only matters if the hook itself was ever missing.
 
+## Bluetooth disappears (MT7922 combo card, `usb 3-10`)
+
+Symptom: no `hci0`, `bluetoothctl list` empty, `bluetooth.service` inactive with
+`ConditionPathIsDirectory=/sys/class/bluetooth` unmet, eww Bluetooth widget dead.
+
+1. Confirm it is USB enumeration, not bluez:
+
+   ```bash
+   journalctl -k -b | grep -E 'usb 3-10|btusb'
+   lsusb | grep 13d3
+   ```
+
+   `usb 3-10: device descriptor read/64, error -110` followed by
+   `device not accepting address, error -62` means the USB half of the radio is
+   wedged. Copy the trace immediately — journald only keeps ~8 days here:
+   `journalctl -k -b > /tmp/bt-wedge-$(date +%F).log`.
+
+2. **Do not suspect the kernel.** This was investigated on 2026-10-08 and is
+   settled: the identical failure reproduced on the *previous* kernel after a
+   downgrade to 7.2.7, and survived `btusb`/`mt7921e` reloads, an xHCI
+   unbind/rebind of `0000:00:14.0`, and an ASUS WMI rfkill power cycle — while
+   webcam, card reader and fingerprint on the same controller re-enumerated
+   fine. Only a full power drain cleared it, and Bluetooth was working again on
+   the *unpinned* 7.2.7 by 2026-10-25.
+
+3. Power drain: `systemctl poweroff`, unplug the AC adapter, hold the power
+   button 30-60 s, plug back in, cold boot.
+
+4. Verify: `lsusb | grep 13d3` shows `13d3:3568`, `bluetoothctl show` reports
+   `Powered: yes`, and `bluetoothctl --timeout 6 scan on` finds devices.
+
+Never work around this by pinning `linux`: it protects nothing and costs every
+kernel fix in between (the 2026-10-08 pin was based on exactly this wrong
+conclusion — see the `pacman_ignore_pkg` comment in
+`ansible/roles/packages/defaults/main.yml`). If it ever recurs right after a
+Windows session, disable Windows fast startup first.
+
 ## pacman refresh fails on the lizardbyte repo
 
 The `[lizardbyte]` repo (sunshine builds, configured in

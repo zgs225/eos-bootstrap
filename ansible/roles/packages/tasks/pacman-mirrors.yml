@@ -12,12 +12,15 @@
     line: 'ParallelDownloads = {{ pacman_parallel_downloads }}'
     state: present
 
-- name: Pin kernel/nvidia packages in pacman.conf (IgnorePkg)
+# Declarative in both directions: a non-empty pacman_ignore_pkg writes the
+# line, an empty list removes it again (regexp only matches the active line,
+# so the stock "#IgnorePkg =" sample comment in pacman.conf survives).
+- name: Manage IgnorePkg in pacman.conf
   ansible.builtin.lineinfile:
     path: /etc/pacman.conf
-    regexp: '^\s*#?\s*IgnorePkg\s*(=.*)?$'
+    regexp: '^\s*IgnorePkg\s*='
     line: 'IgnorePkg = {{ pacman_ignore_pkg | join(" ") }}'
-    state: present
+    state: '{{ (pacman_ignore_pkg | length > 0) | ternary("present", "absent") }}'
 
 - name: Deploy pacman mirrorlist
   ansible.builtin.template:
